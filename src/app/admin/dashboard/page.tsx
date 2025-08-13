@@ -115,7 +115,7 @@ export default function AdminDashboard() {
             Welcome back, {session.user.name}! 👋
           </h2>
           <p className="text-gray-600">
-            Here's an overview of your teaching center's current status and activities.
+            Here&apos;s an overview of your teaching center&apos;s current status and activities.
           </p>
         </div>
 

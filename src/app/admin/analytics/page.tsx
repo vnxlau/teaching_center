@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
@@ -63,6 +63,20 @@ export default function AdminAnalytics() {
   const [loading, setLoading] = useState(true)
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'quarter'>('month')
 
+  const fetchAnalyticsData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/admin/analytics?timeframe=${timeframe}`)
+      if (response.ok) {
+        const data = await response.json()
+        setAnalyticsData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [timeframe])
+
   useEffect(() => {
     if (status === 'loading') return
 
@@ -77,21 +91,7 @@ export default function AdminAnalytics() {
     }
 
     fetchAnalyticsData()
-  }, [session, status, router, timeframe])
-
-  const fetchAnalyticsData = async () => {
-    try {
-      const response = await fetch(`/api/admin/analytics?timeframe=${timeframe}`)
-      if (response.ok) {
-        const data = await response.json()
-        setAnalyticsData(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [session, status, router, fetchAnalyticsData])
 
   const breadcrumbItems = [
     { label: 'Home', href: '/' },

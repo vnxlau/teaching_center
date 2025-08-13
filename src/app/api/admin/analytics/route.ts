@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
@@ -45,9 +45,7 @@ export async function GET(request: NextRequest) {
       prisma.student.count(),
       prisma.student.count({
         where: {
-          user: {
-            status: 'ACTIVE'
-          }
+          isActive: true
         }
       }),
       prisma.user.count({
@@ -63,7 +61,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.grade.findMany({
+      prisma.testResult.findMany({
         include: {
           test: true,
           student: {

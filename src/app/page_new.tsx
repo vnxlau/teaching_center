@@ -106,7 +106,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">For Parents</h3>
               <p className="text-gray-600">
-                Monitor your children's academic progress and stay informed about their education.
+                Monitor your children&apos;s academic progress and stay informed about their education.
               </p>
             </div>
 

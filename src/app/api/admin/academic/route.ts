@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
@@ -14,40 +14,51 @@ export async function GET(request: NextRequest) {
     // Fetch tests
     const tests = await prisma.test.findMany({
       include: {
-        grades: true,
-        schoolYear: true
-      },
-      orderBy: {
-        scheduledDate: 'desc'
-      }
-    })
-
-    // Transform tests data
-    const transformedTests = tests.map((test: any) => ({
-      id: test.id,
-      title: test.title,
-      subject: test.subject,
-      scheduledDate: test.scheduledDate.toISOString(),
-      maxScore: test.maxScore,
-      status: test.status,
-      participantCount: test.grades.length,
-      averageScore: test.grades.length > 0 
-        ? test.grades.reduce((sum: number, grade: any) => sum + grade.score, 0) / test.grades.length
-        : undefined
-    }))
-
-    // Fetch teaching plans
-    const teachingPlans = await prisma.teachingPlan.findMany({
-      include: {
-        student: true,
-        schoolYear: true
+        staff: true
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
 
-    // Transform teaching plans data
+    // Fetch test results
+    const testResults = await prisma.testResult.findMany({
+      include: {
+        test: true,
+        student: {
+          include: {
+            user: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // Fetch activities
+    const activities = await prisma.activity.findMany({
+      include: {
+        staff: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return NextResponse.json({
+      tests,
+      testResults,
+      activities
+    })
+  } catch (error) {
+    console.error('Academic API error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch academic data' },
+      { status: 500 }
+    )
+  }
+}
     const transformedPlans = teachingPlans.map((plan: any) => ({
       id: plan.id,
       studentName: plan.student.name,
