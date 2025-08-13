@@ -64,12 +64,12 @@ export async function GET(request: NextRequest) {
     const transformedPayments = payments.map((payment: any) => ({
       id: payment.id,
       studentCode: payment.student.studentCode,
-      studentName: `${payment.student.user.firstName} ${payment.student.user.lastName}`,
+      studentName: payment.student.user.name,
       amount: payment.amount,
       dueDate: payment.dueDate.toISOString(),
       status: payment.dueDate < now && payment.status === 'PENDING' ? 'OVERDUE' : payment.status,
-      paymentDate: payment.paymentDate ? payment.paymentDate.toISOString() : null,
-      description: payment.description,
+      paidDate: payment.paidDate ? payment.paidDate.toISOString() : null,
+      notes: payment.notes,
       method: payment.method
     }))
 
