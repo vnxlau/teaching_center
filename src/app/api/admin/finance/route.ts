@@ -100,10 +100,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { studentId, amount, description, dueDate, method, status } = body
+    const { studentId, amount, notes, dueDate, method, status, paymentType, schoolYearId } = body
 
     // Validate required fields
-    if (!studentId || !amount || !description || !dueDate) {
+    if (!studentId || !amount || !dueDate || !schoolYearId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -126,12 +126,14 @@ export async function POST(request: NextRequest) {
     const newPayment = await prisma.payment.create({
       data: {
         studentId,
+        schoolYearId,
         amount: parseFloat(amount),
-        description,
+        notes,
         dueDate: new Date(dueDate),
         status: status || 'PENDING',
+        paymentType: paymentType || 'MONTHLY_FEE',
         method: method || null,
-        paymentDate: status === 'PAID' ? new Date() : null
+        paidDate: status === 'PAID' ? new Date() : null
       },
       include: {
         student: {
@@ -147,11 +149,14 @@ export async function POST(request: NextRequest) {
       payment: {
         id: newPayment.id,
         studentCode: newPayment.student.studentCode,
-        studentName: `${newPayment.student.user.firstName} ${newPayment.student.user.lastName}`,
+        studentName: newPayment.student.user.name,
         amount: newPayment.amount,
-        description: newPayment.description,
+        notes: newPayment.notes,
         dueDate: newPayment.dueDate.toISOString(),
-        status: newPayment.status
+        status: newPayment.status,
+        paymentType: newPayment.paymentType,
+        method: newPayment.method,
+        paidDate: newPayment.paidDate?.toISOString() || null
       }
     })
 
@@ -196,7 +201,7 @@ export async function PUT(request: NextRequest) {
       where: { id: paymentId },
       data: {
         status,
-        paymentDate: paymentDate ? new Date(paymentDate) : null,
+        paidDate: paymentDate ? new Date(paymentDate) : null,
         method: method || payment.method
       },
       include: {
@@ -213,7 +218,7 @@ export async function PUT(request: NextRequest) {
       payment: {
         id: updatedPayment.id,
         status: updatedPayment.status,
-        paymentDate: updatedPayment.paymentDate?.toISOString() || null
+        paidDate: updatedPayment.paidDate?.toISOString() || null
       }
     })
 

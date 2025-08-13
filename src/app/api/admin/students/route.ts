@@ -23,7 +23,11 @@ export async function GET(request: NextRequest) {
         user: true,
         parents: {
           include: {
-            user: true
+            parent: {
+              include: {
+                user: true
+              }
+            }
           }
         },
         payments: {
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
           },
           take: 1
         },
-        testResults: {
+        tests: {
           include: {
             test: true
           }
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
     // Transform data for frontend
     const transformedStudents = students.map((student: any) => {
       // Calculate academic average
-      const testScores = student.testResults.map((result: any) => 
+      const testScores = student.tests.map((result: any) => 
         (result.score / result.test.maxScore) * 100
       )
       const averageScore = testScores.length > 0 
@@ -61,18 +65,18 @@ export async function GET(request: NextRequest) {
         (lastPayment.status === 'PAID' && lastPayment.dueDate > now) : false
 
       // Get parent info
-      const parent = student.parents[0]
+      const parentRelation = student.parents[0]
+      const parent = parentRelation?.parent
 
       return {
         id: student.id,
         studentCode: student.studentCode,
-        firstName: student.user.firstName,
-        lastName: student.user.lastName,
+        firstName: student.firstName,
+        lastName: student.lastName,
         email: student.user.email,
         grade: student.grade,
-        status: student.status,
-        enrollmentDate: student.createdAt.toISOString(),
-        parentName: parent ? `${parent.user.firstName} ${parent.user.lastName}` : null,
+        enrollmentDate: student.enrollmentDate.toISOString(),
+        parentName: parent ? parent.user.name : null,
         parentEmail: parent ? parent.user.email : null,
         paymentStatus: {
           current: paymentCurrent,
@@ -82,7 +86,7 @@ export async function GET(request: NextRequest) {
         academicStatus: {
           currentGrade: student.grade,
           averageScore: averageScore,
-          testsCompleted: student.testResults.length
+          testsCompleted: student.tests.length
         }
       }
     })
@@ -113,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { firstName, lastName, email, grade, parentEmail } = body
+    const { firstName, lastName, email, grade, parentEmail, dateOfBirth, schoolYearId } = body
 
     // Validate required fields
     if (!firstName || !lastName || !email || !grade) {
@@ -149,8 +153,6 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         name: `${firstName} ${lastName}`,
-        firstName,
-        lastName,
         role: 'STUDENT',
         password: '$2a$10$defaultPasswordHash' // Should be properly hashed
       }
@@ -160,8 +162,11 @@ export async function POST(request: NextRequest) {
       data: {
         userId: newUser.id,
         studentCode,
+        firstName,
+        lastName,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date('2010-01-01'),
         grade,
-        status: 'ACTIVE'
+        schoolYearId: schoolYearId || 'schoolyear1' // Default school year
       }
     })
 

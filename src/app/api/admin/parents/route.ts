@@ -15,9 +15,13 @@ export async function GET(request: NextRequest) {
     const parents = await prisma.parent.findMany({
       include: {
         user: true,
-        children: {
+        students: {
           include: {
-            user: true
+            student: {
+              include: {
+                user: true
+              }
+            }
           }
         }
       },
@@ -34,16 +38,15 @@ export async function GET(request: NextRequest) {
       name: parent.user.name,
       email: parent.user.email,
       phone: parent.phone || 'Not provided',
-      children: parent.children.map((child: any) => ({
-        id: child.id,
-        name: child.user.name,
-        studentCode: child.studentCode,
-        class: child.class || 'Not assigned',
-        status: child.status
+      children: parent.students.map((studentParent: any) => ({
+        id: studentParent.student.id,
+        name: studentParent.student.user.name,
+        studentCode: studentParent.student.studentCode,
+        grade: studentParent.student.grade || 'Not assigned',
+        relationship: studentParent.relationship
       })),
-      totalChildren: parent.children.length,
-      contactPreference: parent.contactPreference || 'EMAIL',
-      lastContact: parent.lastContact,
+      totalChildren: parent.students.length,
+      createdAt: parent.createdAt.toISOString(),
       emergencyContact: parent.emergencyContact || false
     }))
 
@@ -106,9 +109,10 @@ export async function POST(request: NextRequest) {
     const parent = await prisma.parent.create({
       data: {
         userId: user.id,
+        firstName: name.split(' ')[0] || name,
+        lastName: name.split(' ').slice(1).join(' ') || '',
         phone,
-        contactPreference: contactPreference || 'EMAIL',
-        emergencyContact: emergencyContact || false
+        email
       }
     })
 
@@ -160,10 +164,10 @@ export async function PUT(request: NextRequest) {
     const updatedParent = await prisma.parent.update({
       where: { id },
       data: {
+        firstName: name.split(' ')[0] || name,
+        lastName: name.split(' ').slice(1).join(' ') || '',
         phone,
-        contactPreference,
-        emergencyContact,
-        lastContact: new Date()
+        email
       }
     })
 
