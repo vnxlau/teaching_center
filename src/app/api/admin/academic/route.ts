@@ -11,20 +11,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch tests
+    // Fetch tests with related data
     const tests = await prisma.test.findMany({
       include: {
-        staff: true
+        staff: {
+          include: {
+            user: true
+          }
+        },
+        schoolYear: true,
+        results: {
+          include: {
+            student: {
+              include: {
+                user: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
 
-    // Fetch test results
-    const testResults = await prisma.testResult.findMany({
+    // Fetch teaching plans with related data
+    const teachingPlans = await prisma.teachingPlan.findMany({
       include: {
-        test: true,
         student: {
           include: {
             user: true
@@ -36,58 +49,55 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Fetch activities
-    const activities = await prisma.activity.findMany({
-      include: {
-        staff: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    // Transform tests for frontend
+    const transformedTests = tests.map((test: any) => ({
+      id: test.id,
+      title: test.title,
+      subject: test.subject,
+      description: test.description,
+      scheduledDate: test.scheduledDate.toISOString(),
+      maxScore: test.maxScore,
+      isActive: test.isActive,
+      staffName: test.staff?.user?.name || 'Unknown Staff',
+      resultCount: test.results?.length || 0,
+      averageScore: test.results?.length > 0 
+        ? test.results.reduce((sum: number, result: any) => sum + Number(result.score), 0) / test.results.length
+        : 0
+    }))
 
-    return NextResponse.json({
-      tests,
-      testResults,
-      activities
-    })
-  } catch (error) {
-    console.error('Academic API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch academic data' },
-      { status: 500 }
-    )
-  }
-}
+    // Transform teaching plans for frontend
     const transformedPlans = teachingPlans.map((plan: any) => ({
       id: plan.id,
-      studentName: plan.student.name,
-      studentCode: plan.student.studentCode,
+      studentName: plan.student?.user?.name || 'Unknown Student',
+      studentCode: plan.student?.studentCode || '',
       subjects: plan.subjects,
       goals: plan.goals,
-      status: plan.status,
+      methodology: plan.methodology,
+      schedule: plan.schedule,
       createdDate: plan.createdAt.toISOString(),
-      progress: plan.progress || 0
+      notes: plan.notes
     }))
 
     // Calculate academic stats
     const totalTests = tests.length
-    const upcomingTests = tests.filter((test: any) => test.status === 'SCHEDULED').length
-    const completedTests = tests.filter((test: any) => test.status === 'COMPLETED').length
-    const activeTeachingPlans = teachingPlans.filter((plan: any) => plan.status === 'ACTIVE').length
+    const upcomingTests = tests.filter((test: any) => test.isActive).length
+    const completedTests = tests.filter((test: any) => !test.isActive).length
+    const activeTeachingPlans = teachingPlans.length
     
     // Get unique subjects
     const allSubjects = new Set()
     tests.forEach((test: any) => allSubjects.add(test.subject))
     teachingPlans.forEach((plan: any) => {
-      plan.subjects.forEach((subject: string) => allSubjects.add(subject))
+      if (Array.isArray(plan.subjects)) {
+        plan.subjects.forEach((subject: string) => allSubjects.add(subject))
+      }
     })
     const totalSubjects = allSubjects.size
 
     // Calculate average test score
-    const allGrades = await prisma.grade.findMany()
-    const averageTestScore = allGrades.length > 0 
-      ? allGrades.reduce((sum: number, grade: any) => sum + grade.score, 0) / allGrades.length
+    const allTestResults = await prisma.testResult.findMany()
+    const averageTestScore = allTestResults.length > 0 
+      ? allTestResults.reduce((sum: number, result: any) => sum + Number(result.score), 0) / allTestResults.length
       : 0
 
     const stats = {
@@ -127,10 +137,11 @@ export async function POST(request: NextRequest) {
         data: {
           title: data.title,
           subject: data.subject,
+          description: data.description || '',
           scheduledDate: new Date(data.scheduledDate),
           maxScore: data.maxScore,
-          status: 'SCHEDULED',
-          schoolYearId: data.schoolYearId
+          schoolYearId: data.schoolYearId,
+          staffId: data.staffId || session.user.id
         }
       })
 
@@ -142,9 +153,9 @@ export async function POST(request: NextRequest) {
           studentId: data.studentId,
           subjects: data.subjects,
           goals: data.goals,
-          status: 'ACTIVE',
-          progress: 0,
-          schoolYearId: data.schoolYearId
+          methodology: data.methodology,
+          schedule: data.schedule,
+          notes: data.notes
         }
       })
 
@@ -176,9 +187,10 @@ export async function PUT(request: NextRequest) {
         data: {
           title: data.title,
           subject: data.subject,
+          description: data.description,
           scheduledDate: new Date(data.scheduledDate),
           maxScore: data.maxScore,
-          status: data.status
+          isActive: data.isActive
         }
       })
 
@@ -190,8 +202,9 @@ export async function PUT(request: NextRequest) {
         data: {
           subjects: data.subjects,
           goals: data.goals,
-          status: data.status,
-          progress: data.progress
+          methodology: data.methodology,
+          schedule: data.schedule,
+          notes: data.notes
         }
       })
 
@@ -222,11 +235,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (type === 'test') {
-      // Delete test (and related grades)
-      await prisma.grade.deleteMany({
-        where: { testId: id }
-      })
-      
+      // Delete test (cascade will handle test results automatically)
       await prisma.test.delete({
         where: { id }
       })
