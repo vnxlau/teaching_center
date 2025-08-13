@@ -1,0 +1,348 @@
+'use client'
+
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import Breadcrumb from '@/components/Breadcrumb'
+
+interface StudentData {
+  id: string
+  studentCode: string
+  firstName: string
+  lastName: string
+  grade: string
+  teachingPlan: {
+    subjects: string[]
+    goals: string
+    schedule: string
+  } | null
+  recentGrades: Array<{
+    test: {
+      title: string
+      subject: string
+      maxScore: number
+    }
+    score: number
+    notes: string
+  }>
+  upcomingTests: Array<{
+    title: string
+    subject: string
+    scheduledDate: string
+  }>
+  paymentStatus: {
+    pending: number
+    overdue: number
+  }
+}
+
+export default function StudentDashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [studentData, setStudentData] = useState<StudentData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (session.user.role !== 'STUDENT') {
+      router.push('/auth/signin')
+      return
+    }
+
+    fetchStudentData()
+  }, [session, status, router])
+
+  const fetchStudentData = async () => {
+    try {
+      const response = await fetch('/api/student/dashboard')
+      if (response.ok) {
+        const data = await response.json()
+        setStudentData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch student data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSignOut = async () => {
+    const { signOut } = await import('next-auth/react')
+    await signOut({ callbackUrl: '/' })
+  }
+
+  if (status === 'loading' || !session) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  const breadcrumbItems = [
+    { label: 'Home', href: '/' },
+    { label: 'Student Dashboard' }
+  ]
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/" className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">TC</span>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Student Portal</h1>
+                  <p className="text-sm text-gray-600">Welcome back, {session.user.name}</p>
+                </div>
+              </Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
+                <p className="text-xs text-gray-500">{session.user.role}</p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" text="Loading dashboard..." />
+          </div>
+        ) : !studentData ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <div className="text-gray-400 text-6xl mb-4">📚</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to Your Student Portal</h3>
+            <p className="text-gray-600">Your personalized learning dashboard will appear here once your account is fully set up.</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Welcome Section */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Welcome back, {studentData.firstName}!</h2>
+                  <p className="text-blue-100">
+                    Student ID: {studentData.studentCode} • Grade: {studentData.grade}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl mb-2">🎓</div>
+                  <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0h2m-2 0v2a2 2 0 002 2h2a2 2 0 002-2v-2m0 0V9a2 2 0 00-2-2H9" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Upcoming Tests</p>
+                    <p className="text-2xl font-bold text-gray-900">{studentData.upcomingTests.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Recent Grades</p>
+                    <p className="text-2xl font-bold text-gray-900">{studentData.recentGrades.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Average Score</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {studentData.recentGrades.length > 0 
+                        ? Math.round(studentData.recentGrades.reduce((acc, grade) => 
+                            acc + (grade.score / grade.test.maxScore * 100), 0) / studentData.recentGrades.length)
+                        : 0}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+                    <p className="text-2xl font-bold text-gray-900">{studentData.paymentStatus.pending}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Upcoming Tests */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">Upcoming Tests</h3>
+                </div>
+                <div className="p-6">
+                  {studentData.upcomingTests.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">📝</div>
+                      <p className="text-gray-600">No upcoming tests scheduled</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {studentData.upcomingTests.slice(0, 3).map((test, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div>
+                            <h4 className="font-medium text-gray-900">{test.title}</h4>
+                            <p className="text-sm text-gray-600">{test.subject}</p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(test.scheduledDate).toLocaleDateString()} at{' '}
+                              {new Date(test.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {test.subject}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Grades */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">Recent Grades</h3>
+                </div>
+                <div className="p-6">
+                  {studentData.recentGrades.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">📊</div>
+                      <p className="text-gray-600">No recent grades available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {studentData.recentGrades.slice(0, 3).map((grade, index) => {
+                        const percentage = Math.round((grade.score / grade.test.maxScore) * 100)
+                        return (
+                          <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{grade.test.title}</h4>
+                              <p className="text-sm text-gray-600">{grade.test.subject}</p>
+                              {grade.notes && (
+                                <p className="text-sm text-gray-500 mt-1">{grade.notes}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-gray-900">
+                                {grade.score}/{grade.test.maxScore}
+                              </p>
+                              <p className={`text-sm font-medium ${
+                                percentage >= 80 ? 'text-green-600' : 
+                                percentage >= 70 ? 'text-yellow-600' : 'text-red-600'
+                              }`}>
+                                {percentage}%
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Teaching Plan */}
+            {studentData.teachingPlan && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">My Learning Plan</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Subjects</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {studentData.teachingPlan.subjects.map((subject, index) => (
+                        <span key={index} className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-primary-100 text-primary-800">
+                          {subject}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Schedule</h4>
+                    <p className="text-gray-600">{studentData.teachingPlan.schedule}</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Learning Goals</h4>
+                  <p className="text-gray-600">{studentData.teachingPlan.goals}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

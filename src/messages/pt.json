@@ -1,0 +1,180 @@
+{
+  "common": {
+    "signIn": "Entrar",
+    "signOut": "Sair",
+    "email": "Email",
+    "password": "Palavra-passe",
+    "dashboard": "Painel",
+    "loading": "A carregar...",
+    "loadingDashboard": "A carregar painel...",
+    "home": "Início",
+    "welcome": "Bem-vindo",
+    "welcomeBack": "Bem-vindo de volta",
+    "status": "Estado",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "pending": "Pendente",
+    "paid": "Pago",
+    "overdue": "Em atraso",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "add": "Adicionar",
+    "search": "Pesquisar",
+    "filter": "Filtrar",
+    "date": "Data",
+    "name": "Nome",
+    "total": "Total",
+    "actions": "Ações"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signOut": "Sair", 
+    "signInTitle": "Entrar na sua conta",
+    "signInSubtitle": "Aceda ao seu portal do centro de ensino",
+    "emailLabel": "Endereço de email",
+    "passwordLabel": "Palavra-passe",
+    "emailPlaceholder": "Introduza o seu email",
+    "passwordPlaceholder": "Introduza a sua palavra-passe",
+    "signInButton": "Entrar",
+    "signingIn": "A entrar...",
+    "backToHomepage": "Voltar à página inicial",
+    "errors": {
+      "invalidCredentials": "Email ou palavra-passe inválidos",
+      "general": "Ocorreu um erro. Tente novamente."
+    },
+    "demo": {
+      "title": "Contas de Demonstração",
+      "adminAccount": "Conta de Administrador",
+      "studentAccount": "Conta de Estudante",
+      "parentAccount": "Conta de Pai/Mãe", 
+      "password": "Palavra-passe"
+    }
+  },
+  "navigation": {
+    "adminDashboard": "Painel do Administrador",
+    "studentPortal": "Portal do Estudante",
+    "parentPortal": "Portal dos Pais",
+    "analytics": "Análises",
+    "students": "Estudantes",
+    "finance": "Financeiro",
+    "academic": "Académico",
+    "parents": "Pais",
+    "messages": "Mensagens",
+    "settings": "Definições"
+  },
+  "dashboard": {
+    "adminTitle": "Painel de Administração",
+    "studentTitle": "Portal do Estudante",
+    "parentTitle": "Portal dos Pais",
+    "systemOverview": "Sistema de Gestão do Centro de Ensino",
+    "comprehensiveInsights": "Relatórios e análises abrangentes",
+    "personalizedDashboard": "O seu painel de aprendizagem personalizado aparecerá aqui assim que a sua conta estiver totalmente configurada",
+    "familyInformation": "A informação dos seus filhos aparecerá aqui assim que as suas contas estiverem associadas",
+    "welcomeBack": "Bem-vindo de volta",
+    "student": {
+      "welcomeTitle": "Bem-vindo ao Seu Portal de Estudante",
+      "welcomeDescription": "O seu painel de aprendizagem personalizado aparecerá aqui assim que a sua conta estiver totalmente configurada.",
+      "welcomeMessage": "Bem-vindo de volta, {name}!",
+      "studentInfo": "ID do Estudante: {studentCode} • Ano: {grade}"
+    }
+  },
+  "stats": {
+    "totalStudents": "Total de Estudantes",
+    "activeStudents": "Estudantes Activos",
+    "totalStaff": "Membros da Equipa",
+    "totalParents": "Pais",
+    "monthlyRevenue": "Receita Mensal",
+    "pendingPayments": "Pagamentos Pendentes",
+    "upcomingTests": "Testes Próximos",
+    "recentGrades": "Classificações Recentes",
+    "averageScore": "Pontuação Média",
+    "progress": "Progresso"
+  },
+  "student": {
+    "welcomeMessage": "Bem-vindo de volta, {name}!",
+    "studentId": "ID do Estudante",
+    "grade": "Ano",
+    "myLearningPlan": "O Meu Plano de Aprendizagem",
+    "subjects": "Disciplinas",
+    "learningGoals": "Objectivos de Aprendizagem",
+    "schedule": "Horário",
+    "noUpcomingTests": "Não há testes agendados",
+    "noRecentGrades": "Não há classificações recentes disponíveis"
+  },
+  "parent": {
+    "welcomeMessage": "Bem-vindo de volta, {name}!",
+    "managingChildren": "A gerir {count} {count, plural, one {filho} other {filhos}}",
+    "selectChild": "Seleccionar Filho",
+    "childOverview": "Visão Geral do Filho",
+    "academicMonitoring": "Monitorização Académica",
+    "paymentStatus": "Estado dos Pagamentos",
+    "noChildrenLinked": "Não há filhos ligados à sua conta"
+  },
+  "academic": {
+    "testTitle": "Título do Teste",
+    "subject": "Disciplina",
+    "scheduledDate": "Data Agendada",
+    "maxScore": "Pontuação Máxima",
+    "score": "Pontuação",
+    "percentage": "Percentagem",
+    "notes": "Notas",
+    "dueDate": "Data de Vencimento"
+  },
+  "finance": {
+    "amount": "Valor",
+    "description": "Descrição",
+    "paymentMethod": "Método de Pagamento",
+    "totalRevenue": "Receita Total",
+    "pendingAmount": "Valor Pendente",
+    "overdueAmount": "Valor em Atraso"
+  },
+  "analytics": {
+    "analyticsTitle": "Painel de Análises",
+    "academicPerformance": "Desempenho Académico",
+    "financialSummary": "Resumo Financeiro",
+    "recentActivity": "Actividade Recente",
+    "performanceMetrics": "Métricas de Desempenho",
+    "averageGrade": "Classificação Média",
+    "passRate": "Taxa de Aprovação",
+    "topPerformers": "Melhores Desempenhos",
+    "lastWeek": "Última Semana",
+    "lastMonth": "Último Mês",
+    "lastQuarter": "Último Trimestre"
+  },
+  "home": {
+    "title": "Centro de Ensino",
+    "subtitle": "Sistema de gestão abrangente para estudantes, pais e administradores. Acompanhe o progresso académico, gerencie finanças e mantenha-se conectado.",
+    "features": {
+      "students": {
+        "title": "Para Estudantes",
+        "description": "Visualize o seu progresso académico, testes próximos e planos de aprendizagem num só local."
+      },
+      "parents": {
+        "title": "Para Pais",
+        "description": "Monitore o progresso académico dos seus filhos e mantenha-se informado sobre a sua educação."
+      },
+      "administrators": {
+        "title": "Para Administradores",
+        "description": "Ferramentas de gestão abrangentes para registos de estudantes, finanças e planeamento académico."
+      }
+    },
+    "cta": {
+      "title": "Pronto para começar?",
+      "description": "Entre com as suas credenciais para aceder ao seu painel personalizado.",
+      "button": "Entrar na Sua Conta"
+    },
+    "footer": {
+      "copyright": "© 2024 Centro de Ensino. Todos os direitos reservados."
+    }
+  },
+  "ui": {
+    "backToDashboard": "Voltar ao Painel",
+    "loadingDashboard": "A carregar painel...",
+    "noDataAvailable": "Não Há Dados Disponíveis",
+    "unableToLoadData": "Não foi possível carregar os dados do painel neste momento",
+    "language": "Idioma",
+    "selectLanguage": "Seleccionar Idioma"
+  }
+}

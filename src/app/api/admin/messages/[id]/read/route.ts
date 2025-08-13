@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { prisma } from '@/lib/prisma'
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const messageId = params.id
+
+    // Update message as read
+    const message = await prisma.message.update({
+      where: {
+        id: messageId,
+        toUserId: session.user.id // Only allow marking own messages as read
+      },
+      data: {
+        read: true
+      }
+    })
+
+    return NextResponse.json({ message })
+  } catch (error) {
+    console.error('Mark as read API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

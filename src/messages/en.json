@@ -1,0 +1,180 @@
+{
+  "common": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "dashboard": "Dashboard",
+    "loading": "Loading...",
+    "loadingDashboard": "Loading dashboard...",
+    "home": "Home",
+    "welcome": "Welcome",
+    "welcomeBack": "Welcome back",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "date": "Date",
+    "name": "Name",
+    "total": "Total",
+    "actions": "Actions"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "signInTitle": "Sign in to your account",
+    "signInSubtitle": "Access your teaching center portal",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password", 
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "signInButton": "Sign In",
+    "signingIn": "Signing in...",
+    "backToHomepage": "Back to homepage",
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "general": "An error occurred. Please try again."
+    },
+    "demo": {
+      "title": "Demo Accounts",
+      "adminAccount": "Admin Account",
+      "studentAccount": "Student Account", 
+      "parentAccount": "Parent Account",
+      "password": "Password"
+    }
+  },
+  "navigation": {
+    "adminDashboard": "Admin Dashboard",
+    "studentPortal": "Student Portal",
+    "parentPortal": "Parent Portal",
+    "analytics": "Analytics",
+    "students": "Students",
+    "finance": "Finance",
+    "academic": "Academic",
+    "parents": "Parents",
+    "messages": "Messages",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "adminTitle": "Admin Dashboard",
+    "studentTitle": "Student Portal",
+    "parentTitle": "Parent Portal",
+    "systemOverview": "Teaching Center Management System",
+    "comprehensiveInsights": "Comprehensive insights and reporting",
+    "personalizedDashboard": "Your personalized learning dashboard will appear here once your account is fully set up",
+    "familyInformation": "Your children's information will appear here once their accounts are linked",
+    "welcomeBack": "Welcome back",
+    "student": {
+      "welcomeTitle": "Welcome to Your Student Portal",
+      "welcomeDescription": "Your personalized learning dashboard will appear here once your account is fully set up.",
+      "welcomeMessage": "Welcome back, {name}!",
+      "studentInfo": "Student ID: {studentCode} • Grade: {grade}"
+    }
+  },
+  "stats": {
+    "totalStudents": "Total Students",
+    "activeStudents": "Active Students",
+    "totalStaff": "Staff Members",
+    "totalParents": "Parents",
+    "monthlyRevenue": "Monthly Revenue",
+    "pendingPayments": "Pending Payments",
+    "upcomingTests": "Upcoming Tests",
+    "recentGrades": "Recent Grades",
+    "averageScore": "Average Score",
+    "progress": "Progress"
+  },
+  "student": {
+    "welcomeMessage": "Welcome back, {name}!",
+    "studentId": "Student ID",
+    "grade": "Grade",
+    "myLearningPlan": "My Learning Plan",
+    "subjects": "Subjects",
+    "learningGoals": "Learning Goals",
+    "schedule": "Schedule",
+    "noUpcomingTests": "No upcoming tests scheduled",
+    "noRecentGrades": "No recent grades available"
+  },
+  "parent": {
+    "welcomeMessage": "Welcome back, {name}!",
+    "managingChildren": "Managing {count} {count, plural, one {child} other {children}}",
+    "selectChild": "Select Child",
+    "childOverview": "Child Overview",
+    "academicMonitoring": "Academic Monitoring",
+    "paymentStatus": "Payment Status",
+    "noChildrenLinked": "No children linked to your account"
+  },
+  "academic": {
+    "testTitle": "Test Title",
+    "subject": "Subject",
+    "scheduledDate": "Scheduled Date",
+    "maxScore": "Max Score",
+    "score": "Score",
+    "percentage": "Percentage",
+    "notes": "Notes",
+    "dueDate": "Due Date"
+  },
+  "finance": {
+    "amount": "Amount",
+    "description": "Description",
+    "paymentMethod": "Payment Method",
+    "totalRevenue": "Total Revenue",
+    "pendingAmount": "Pending Amount",
+    "overdueAmount": "Overdue Amount"
+  },
+  "analytics": {
+    "analyticsTitle": "Analytics Dashboard",
+    "academicPerformance": "Academic Performance",
+    "financialSummary": "Financial Summary",
+    "recentActivity": "Recent Activity",
+    "performanceMetrics": "Performance Metrics",
+    "averageGrade": "Average Grade",
+    "passRate": "Pass Rate",
+    "topPerformers": "Top Performers",
+    "lastWeek": "Last Week",
+    "lastMonth": "Last Month",
+    "lastQuarter": "Last Quarter"
+  },
+  "home": {
+    "title": "Teaching Center",
+    "subtitle": "Comprehensive management system for students, parents, and administrators. Track academic progress, manage finances, and stay connected.",
+    "features": {
+      "students": {
+        "title": "For Students",
+        "description": "View your academic progress, upcoming tests, and learning plans in one place."
+      },
+      "parents": {
+        "title": "For Parents", 
+        "description": "Monitor your children's academic progress and stay informed about their education."
+      },
+      "administrators": {
+        "title": "For Administrators",
+        "description": "Comprehensive management tools for student records, finances, and academic planning."
+      }
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "description": "Sign in with your credentials to access your personalized dashboard.",
+      "button": "Sign In to Your Account"
+    },
+    "footer": {
+      "copyright": "© 2024 Teaching Center. All rights reserved."
+    }
+  },
+  "ui": {
+    "backToDashboard": "Back to Dashboard",
+    "loadingDashboard": "Loading dashboard...",
+    "noDataAvailable": "No Data Available",
+    "unableToLoadData": "Unable to load dashboard data at this time",
+    "language": "Language",
+    "selectLanguage": "Select Language"
+  }
+}
