@@ -38,6 +38,8 @@ next-env.d.ts
 
 # Prisma
 /generated/prisma
+prisma/dev.db
+prisma/dev.db-journal
 
 # Testing
 coverage/
