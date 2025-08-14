@@ -174,7 +174,7 @@ async function main() {
   await prisma.teachingPlan.create({
     data: {
       studentId: student1.id,
-      subjects: ['Mathematics', 'Portuguese', 'Science'],
+      subjects: JSON.stringify(['Mathematics', 'Portuguese', 'Science']),
       goals: 'Improve problem-solving skills and reading comprehension',
       methodology: 'Interactive learning with practical exercises',
       schedule: 'Monday, Wednesday, Friday - 2:00 PM to 4:00 PM',
@@ -185,11 +185,11 @@ async function main() {
   await prisma.teachingPlan.create({
     data: {
       studentId: student2.id,
-      subjects: ['Mathematics', 'English', 'History'],
-      goals: 'Strengthen analytical thinking and language skills',
-      methodology: 'Project-based learning with group activities',
+      subjects: JSON.stringify(['History', 'Geography', 'English']),
+      goals: 'Enhance critical thinking and language skills',
+      methodology: 'Discussion-based learning with multimedia resources',
       schedule: 'Tuesday, Thursday - 3:00 PM to 5:00 PM',
-      notes: 'Excellent participation in group discussions',
+      notes: 'Student excels in creative writing',
     },
   })
   console.log('✅ Created teaching plans')
