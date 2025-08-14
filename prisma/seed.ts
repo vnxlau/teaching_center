@@ -174,7 +174,7 @@ async function main() {
   await prisma.teachingPlan.create({
     data: {
       studentId: student1.id,
-      subjects: JSON.stringify(['Mathematics', 'Portuguese', 'Science']),
+      subjects: ['Mathematics', 'Portuguese', 'Science'],
       goals: 'Improve problem-solving skills and reading comprehension',
       methodology: 'Interactive learning with practical exercises',
       schedule: 'Monday, Wednesday, Friday - 2:00 PM to 4:00 PM',
@@ -185,7 +185,7 @@ async function main() {
   await prisma.teachingPlan.create({
     data: {
       studentId: student2.id,
-      subjects: JSON.stringify(['History', 'Geography', 'English']),
+      subjects: ['History', 'Geography', 'English'],
       goals: 'Enhance critical thinking and language skills',
       methodology: 'Discussion-based learning with multimedia resources',
       schedule: 'Tuesday, Thursday - 3:00 PM to 5:00 PM',
