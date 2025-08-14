@@ -5,14 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbo",
+    "dev:local": "npm run db:setup-local && next dev --turbo",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
+    "db:setup-local": "prisma db push --schema=prisma/schema.local.prisma && tsx prisma/seed-local.ts",
+    "db:reset-local": "rm -f prisma/dev.db && npm run db:setup-local",
     "db:seed": "tsx prisma/seed.ts",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:studio-local": "prisma studio --schema=prisma/schema.local.prisma"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
