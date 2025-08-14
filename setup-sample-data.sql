@@ -7,11 +7,11 @@ INSERT INTO "public"."school_years" ("id", "name", "startDate", "endDate", "isAc
 
 -- Insert Users (with bcrypt hashed passwords for 'demo123')
 INSERT INTO "public"."users" ("id", "email", "name", "password", "role", "createdAt", "updatedAt") VALUES
-('admin1', 'admin@teachingcenter.com', 'Admin User', '$2a$10$K7L1OJ45/4Y2nIvL0DQbu.L21UQ2sKLyPQjhF8nTTNXfMEYGAd5qG', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('teacher1', 'teacher@teachingcenter.com', 'Maria Silva', '$2a$10$K7L1OJ45/4Y2nIvL0DQbu.L21UQ2sKLyPQjhF8nTTNXfMEYGAd5qG', 'STAFF', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('parent1', 'parent@teachingcenter.com', 'João Santos', '$2a$10$K7L1OJ45/4Y2nIvL0DQbu.L21UQ2sKLyPQjhF8nTTNXfMEYGAd5qG', 'PARENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('student1', 'student@teachingcenter.com', 'Ana Costa', '$2a$10$K7L1OJ45/4Y2nIvL0DQbu.L21UQ2sKLyPQjhF8nTTNXfMEYGAd5qG', 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('student2', 'pedro@example.com', 'Pedro Oliveira', '$2a$10$K7L1OJ45/4Y2nIvL0DQbu.L21UQ2sKLyPQjhF8nTTNXfMEYGAd5qG', 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('admin1', 'admin@teachingcenter.com', 'Admin User', '$2b$10$CUaAIBT.uQ1bkKXJrG21A.TPZ7PL80557wZ09eoTZ7DCPj0qGLEk.', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('teacher1', 'teacher@teachingcenter.com', 'Maria Silva', '$2b$10$CUaAIBT.uQ1bkKXJrG21A.TPZ7PL80557wZ09eoTZ7DCPj0qGLEk.', 'STAFF', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('parent1', 'parent@teachingcenter.com', 'João Santos', '$2b$10$CUaAIBT.uQ1bkKXJrG21A.TPZ7PL80557wZ09eoTZ7DCPj0qGLEk.', 'PARENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('student1', 'student@teachingcenter.com', 'Ana Costa', '$2b$10$CUaAIBT.uQ1bkKXJrG21A.TPZ7PL80557wZ09eoTZ7DCPj0qGLEk.', 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('student2', 'pedro@example.com', 'Pedro Oliveira', '$2b$10$CUaAIBT.uQ1bkKXJrG21A.TPZ7PL80557wZ09eoTZ7DCPj0qGLEk.', 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert Staff
 INSERT INTO "public"."staff" ("id", "userId", "firstName", "lastName", "position", "phone", "hireDate", "isActive", "createdAt", "updatedAt") VALUES
