@@ -85,27 +85,63 @@ This guide provides comprehensive instructions for deploying the Teaching Center
 
 3. **Run Schema Migration**
    ```bash
+   # Use the production deployment script
+   ./deploy-production.sh deploy
+   
+   # Or manually with production environment:
+   export $(grep -v '^#' .env.production | xargs)
    npx prisma db push
    npx prisma generate
-   npx prisma db seed
+   NODE_ENV=production npx prisma db seed
    ```
+
+   **Important**: The seeding must be done with production environment variables loaded, otherwise it will seed your local database instead of production.
 
 ### Phase 2: Environment Configuration
 
 1. **Create Production Environment File**
+   ```bash
+   # Copy the template
+   cp .env.production.example .env.production
+   
+   # Edit .env.production with your actual values
+   nano .env.production
+   ```
+
    ```env
    # .env.production
-   DATABASE_URL="your-supabase-postgres-url"
+   DATABASE_URL="postgresql://postgres:[password]@[host]:5432/postgres"
+   DIRECT_URL="postgresql://postgres.[project_ref]:[password]@[pooler_host]:5432/postgres"
    NEXTAUTH_URL="https://your-app.vercel.app"
    NEXTAUTH_SECRET="your-generated-secret"
-   SUPABASE_URL="your-supabase-url"
+   SUPABASE_URL="https://[project_ref].supabase.co"
    SUPABASE_ANON_KEY="your-supabase-anon-key"
    ```
 
-2. **Generate Secrets**
+2. **Deploy Database Schema and Seed Data**
    ```bash
-   # Generate NextAuth secret
-   openssl rand -base64 32
+   # Use the automated deployment script
+   ./deploy-production.sh deploy
+   
+   # This will:
+   # 1. Load production environment variables
+   # 2. Check database connection
+   # 3. Deploy schema to production database
+   # 4. Seed with demo data
+   # 5. Verify deployment
+   ```
+
+3. **Manual Alternative (if script fails)**
+   ```bash
+   # Load production environment
+   export $(grep -v '^#' .env.production | xargs)
+   
+   # Deploy schema
+   npx prisma generate
+   npx prisma db push
+   
+   # Seed database
+   NODE_ENV=production npx prisma db seed
    ```
 
 ### Phase 3: Application Deployment (Vercel)
@@ -143,6 +179,57 @@ This guide provides comprehensive instructions for deploying the Teaching Center
    # Automatic deployment on git push
    # Or manual deploy from Vercel dashboard
    ```
+
+---
+
+## 🔧 Production Deployment Script
+
+### Automated Deployment Tool
+
+We've included a comprehensive deployment script (`deploy-production.sh`) that handles all production database operations:
+
+```bash
+# Full deployment (recommended for first deployment)
+./deploy-production.sh deploy
+
+# Deploy schema only (no demo data)
+./deploy-production.sh schema-only
+
+# Seed database only (if schema already exists)
+./deploy-production.sh seed-only
+
+# Verify current deployment status
+./deploy-production.sh verify
+
+# Reset and redeploy everything (dangerous!)
+./deploy-production.sh reset
+```
+
+### Script Features:
+- ✅ Automatically loads `.env.production` variables
+- ✅ Verifies database connection before proceeding
+- ✅ Deploys Prisma schema to production database
+- ✅ Seeds database with demo data
+- ✅ Verifies deployment success
+- ✅ Provides clear error messages and guidance
+- ✅ Color-coded output for better readability
+
+### Important Notes About Seeding:
+
+**Why you don't see seed data initially:**
+1. **Environment Isolation**: When you run `npx prisma db seed` locally, it uses your `.env` file (local database)
+2. **Production Seeding**: To seed production, you must explicitly load production environment variables
+3. **Vercel Deployment**: Seeding typically happens during the first deployment to Vercel, not manually
+
+**To seed your Supabase database:**
+```bash
+# Method 1: Use our deployment script (recommended)
+./deploy-production.sh seed-only
+
+# Method 2: Manual approach
+export $(grep -v '^#' .env.production | xargs)
+NODE_ENV=production npx prisma db seed
+```
 
 ---
 
@@ -244,6 +331,68 @@ vercel
 # Deploy to production
 vercel --prod
 ```
+
+---
+
+## 🚨 Troubleshooting Common Issues
+
+### Database Issues
+
+**Problem: "No seed data visible in Supabase"**
+- **Cause**: Seeding ran on local database instead of production
+- **Solution**: Use `./deploy-production.sh seed-only` or manually load production env vars
+
+**Problem: "Database connection failed"**
+- **Cause**: Incorrect DATABASE_URL or network issues
+- **Solution**: 
+  1. Verify DATABASE_URL in `.env.production`
+  2. Check Supabase project status
+  3. Ensure IP is not blocked by Supabase
+
+**Problem: "Schema deployment failed"**
+- **Cause**: Database has existing data or schema conflicts
+- **Solution**: Use `./deploy-production.sh reset` (⚠️ destroys data)
+
+### Vercel Deployment Issues
+
+**Problem: "Build failed on Vercel"**
+- **Cause**: Missing environment variables or build errors
+- **Solution**:
+  1. Check build logs in Vercel dashboard
+  2. Ensure all environment variables are set
+  3. Test build locally with `npm run build`
+
+**Problem: "Database connection fails in production"**
+- **Cause**: Environment variables not set in Vercel
+- **Solution**: Add all `.env.production` variables to Vercel dashboard
+
+**Problem: "NextAuth errors"**
+- **Cause**: Incorrect NEXTAUTH_URL or NEXTAUTH_SECRET
+- **Solution**: 
+  1. Set NEXTAUTH_URL to your Vercel domain
+  2. Generate new secret: `openssl rand -base64 32`
+
+### Application Issues
+
+**Problem: "Cannot login with demo accounts"**
+- **Cause**: Database not seeded or wrong environment
+- **Solution**: 
+  1. Verify seeding: `./deploy-production.sh verify`
+  2. Re-seed: `./deploy-production.sh seed-only`
+
+**Problem: "Application shows errors"**
+- **Cause**: Various - check logs
+- **Solution**:
+  1. Check Vercel function logs
+  2. Check browser console
+  3. Verify all environment variables
+
+### Getting Help
+
+1. **Check Logs**: Always start with Vercel deployment and function logs
+2. **Verify Environment**: Use `./deploy-production.sh verify`
+3. **Test Locally**: Ensure everything works locally first
+4. **Check Documentation**: Review Vercel and Supabase docs
 
 ---
 
