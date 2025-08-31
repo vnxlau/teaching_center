@@ -1,0 +1,13 @@
+Create a list and fix the issues sequentially:
+1. In the Admin account, on the student list the view button on the list does nothing, fix it by opening a student detail page view or modal 
+2. In the Admin account, on the student list the edit button on the list does nothing, fix it by opening a student edit page view or modal
+3. In the Admin account, on the student list the delete button on the list does nothing, fix it by opening a delete confirmation modal or view
+4. In the Admin account, on the student list the column for status doesn't show any values, does the model of student have a status field or something similar?
+5. All the students pay according to the number of datys they go to the teaching center per week, example the student can pay from 1 day per week up to all the days of the week ( free pass or full plan), add/create an entity that reflects this practice (it can be called membership plan, service plan or day plan - you choose the best accorging to market practices) each plan can have a price, a name and a number of days the student is allowed to go.
+5.1. add the montly due amount to the student entity - each student must be assigned to a plan . add a colunmn for discount allocated to a given student, the discount is then applied to the plan full price, and it results in the student monthly due amount. discount is opcional, being the default value a 0 rate amount.
+6. on the finance dashboard make sure there is a section on top of the list search to focus on the current month, example today is 22 of august so it should be August Data example - due payments <A> ( total number <A1> and total amount <A2> ), how many are payed <B> and how many are still due payment <C>. by clicking on each sub section <A1>, <A2>, <B> or <C> go to a view that shows the list of the specific payments - example: list of month payments stil due payment <C>, etc
+
+7. make sure all models in the frontend match the models in the api and do the same for the api models to the sql models
+8. make sure no alert windows are shown, use a small/medium modal with modern simple design, if it is to present info - or else if it is just to output an updated like "student created successfully use a notification window on the top right corner or something similar . make sure all views are consistent with the design implemented. 
+9. what does the teaching plan actually serves ? for me if you have not found a clear explanation for it - i feel that feature overlaps with the other existing ones. so that section and code can be deprecated
+10. the list of the subjects is not returning the subjects but the teaching plans - be sure to have it fixed by listing only the subjects and it's data.

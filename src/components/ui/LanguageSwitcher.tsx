@@ -2,10 +2,17 @@
 
 import { useState } from 'react'
 import { ChevronDownIcon, LanguageIcon } from '@heroicons/react/24/outline'
-import { useI18n, locales, languageNames } from '@/lib/i18n'
+import { useLanguage } from '@/contexts/LanguageContext'
+
+const locales = ['en', 'pt'] as const
+
+const languageNames = {
+  en: 'English',
+  pt: 'Português'
+}
 
 export default function LanguageSwitcher() {
-  const { locale, setLocale } = useI18n()
+  const { language, setLanguage } = useLanguage()
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -15,7 +22,7 @@ export default function LanguageSwitcher() {
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
         <LanguageIcon className="h-5 w-5" />
-        <span className="hidden sm:block">{languageNames[locale]}</span>
+        <span className="hidden sm:block">{languageNames[language]}</span>
         <ChevronDownIcon 
           className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
         />
@@ -28,11 +35,11 @@ export default function LanguageSwitcher() {
               <button
                 key={loc}
                 onClick={() => {
-                  setLocale(loc)
+                  setLanguage(loc)
                   setIsOpen(false)
                 }}
                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                  locale === loc 
+                  language === loc 
                     ? 'bg-blue-50 text-blue-700 font-medium' 
                     : 'text-gray-700'
                 }`}

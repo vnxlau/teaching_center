@@ -26,10 +26,16 @@ export async function GET() {
       where: { id: session.user.studentId },
       include: {
         teachingPlan: {
-          select: {
-            subjects: true,
-            goals: true,
-            schedule: true
+          include: {
+            subjects: {
+              include: {
+                subject: {
+                  select: {
+                    name: true
+                  }
+                }
+              }
+            }
           }
         },
         tests: {
@@ -37,10 +43,12 @@ export async function GET() {
           orderBy: { createdAt: 'desc' },
           include: {
             test: {
-              select: {
-                title: true,
-                subject: true,
-                maxScore: true
+              include: {
+                subject: {
+                  select: {
+                    name: true
+                  }
+                }
               }
             }
           }
@@ -64,10 +72,12 @@ export async function GET() {
           gte: new Date()
         }
       },
-      select: {
-        title: true,
-        subject: true,
-        scheduledDate: true
+      include: {
+        subject: {
+          select: {
+            name: true
+          }
+        }
       },
       orderBy: { scheduledDate: 'asc' },
       take: 5
@@ -96,15 +106,23 @@ export async function GET() {
       firstName: student.firstName,
       lastName: student.lastName,
       grade: student.grade,
-      teachingPlan: student.teachingPlan,
+      teachingPlan: student.teachingPlan ? {
+        subjects: student.teachingPlan.subjects.map(tps => tps.subject.name),
+        goals: student.teachingPlan.goals,
+        schedule: student.teachingPlan.schedule
+      } : null,
       recentGrades: student.tests.map((testResult: any) => ({
-        test: testResult.test,
+        test: {
+          title: testResult.test.title,
+          subject: testResult.test.subject.name,
+          maxScore: testResult.test.maxScore
+        },
         score: testResult.score,
         notes: testResult.notes
       })),
       upcomingTests: upcomingTests.map((test: any) => ({
         title: test.title,
-        subject: test.subject,
+        subject: test.subject.name,
         scheduledDate: test.scheduledDate.toISOString()
       })),
       paymentStatus: {

@@ -53,9 +53,10 @@ export async function GET(request: NextRequest) {
     // Calculate parent stats
     const totalParents = parents.length
     const activeParents = parents.filter((parent: any) => 
-      parent.children.some((child: any) => child.status === 'ACTIVE')
+      parent.children && parent.children.some((child: any) => child.status === 'ACTIVE')
     ).length
-    const totalChildren = parents.reduce((sum: number, parent: any) => sum + parent.children.length, 0)
+    const totalChildren = parents.reduce((sum: number, parent: any) => 
+      sum + (parent.children ? parent.children.length : 0), 0)
     const emergencyContacts = parents.filter((parent: any) => parent.emergencyContact).length
 
     // Get recent messages count (mock data for now)

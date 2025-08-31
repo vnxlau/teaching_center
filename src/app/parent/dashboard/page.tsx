@@ -1,8 +1,8 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 interface ChildData {
   id: string
@@ -35,26 +35,13 @@ interface ChildData {
 }
 
 export default function ParentDashboard() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const [children, setChildren] = useState<ChildData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-
-    if (session.user.role !== 'PARENT') {
-      router.push('/auth/signin')
-      return
-    }
-
     fetchChildrenData()
-  }, [session, status, router])
+  }, [])
 
   const fetchChildrenData = async () => {
     try {
@@ -70,74 +57,37 @@ export default function ParentDashboard() {
     }
   }
 
-  const handleSignOut = async () => {
-    const { signOut } = await import('next-auth/react')
-    await signOut({ callbackUrl: '/' })
-  }
-
-  if (status === 'loading' || !session) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading session...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">TC</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Parent Portal</h1>
-                <p className="text-sm text-gray-600">Welcome back, {session.user.name}</p>
+    <>
+      {loading ? (
+        <div className="space-y-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                <p className="text-xs text-gray-500">Parent</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="space-y-6">
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                </div>
-              </div>
-            ))}
+      ) : (
+        <div className="space-y-6">
+          {/* Welcome Card */}
+          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-sm text-white p-6">
+            <h2 className="text-2xl font-bold mb-2">Welcome back, {session.user.name}! 👨‍👩‍👧‍👦</h2>
+            <p className="text-green-100">
+              Track your {children.length === 1 ? "child's" : "children's"} academic progress and stay connected with the teaching center.
+            </p>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Welcome Card */}
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-sm text-white p-6">
-              <h2 className="text-2xl font-bold mb-2">Welcome back, {session.user.name}! 👨‍👩‍👧‍👦</h2>
-              <p className="text-green-100">
-                Track your {children.length === 1 ? "child's" : "children's"} academic progress and stay connected with the teaching center.
-              </p>
-            </div>
 
             {children.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
@@ -171,7 +121,7 @@ export default function ParentDashboard() {
 
                   {/* Quick Stats for this child */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-blue-50 rounded-lg p-4">
+                    <Link href="/parent/tests" className="block bg-blue-50 rounded-lg p-4 hover:bg-blue-100 transition-colors">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -185,9 +135,9 @@ export default function ParentDashboard() {
                           <p className="text-lg font-bold text-blue-900">{child.recentGrades?.length || 0}</p>
                         </div>
                       </div>
-                    </div>
+                    </Link>
 
-                    <div className="bg-green-50 rounded-lg p-4">
+                    <Link href="/parent/tests" className="block bg-green-50 rounded-lg p-4 hover:bg-green-100 transition-colors">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
@@ -201,9 +151,9 @@ export default function ParentDashboard() {
                           <p className="text-lg font-bold text-green-900">{child.upcomingTests?.length || 0}</p>
                         </div>
                       </div>
-                    </div>
+                    </Link>
 
-                    <div className="bg-yellow-50 rounded-lg p-4">
+                    <Link href="/parent/payments" className="block bg-yellow-50 rounded-lg p-4 hover:bg-yellow-100 transition-colors">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -217,7 +167,7 @@ export default function ParentDashboard() {
                           <p className="text-lg font-bold text-yellow-900">{child.paymentStatus?.pending || 0}</p>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -294,7 +244,6 @@ export default function ParentDashboard() {
             </div>
           </div>
         )}
-      </main>
-    </div>
-  )
-}
+      </>
+    )
+  }

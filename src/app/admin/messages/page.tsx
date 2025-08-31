@@ -44,6 +44,7 @@ export default function MessagesPage() {
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'compose'>('inbox')
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
@@ -68,6 +69,7 @@ export default function MessagesPage() {
     }
 
     fetchMessages()
+    fetchUsers()
   }, [session, status, router])
 
   const fetchMessages = async () => {
@@ -82,6 +84,18 @@ export default function MessagesPage() {
       console.error('Failed to fetch messages:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
     }
   }
 
@@ -156,64 +170,12 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin/dashboard" className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">TC</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-                  <p className="text-sm text-gray-600">Communication center</p>
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/admin/dashboard" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Dashboard
-                </Link>
-                <Link href="/admin/students" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Students
-                </Link>
-                <Link href="/admin/finance" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Finance
-                </Link>
-                <Link href="/admin/academic" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Academic
-                </Link>
-                <Link href="/admin/parents" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Parents
-                </Link>
-                <Link href="/admin/messages" className="text-primary-600 font-medium">
-                  Messages
-                </Link>
-              </nav>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                <p className="text-xs text-gray-500">{session.user.role}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900">Communication Center</h2>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Communication Center</h2>
               <p className="text-gray-600 mt-2">Send and receive messages from staff, students, and parents</p>
             </div>
             <button
@@ -284,9 +246,20 @@ export default function MessagesPage() {
                   className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">Select recipient...</option>
-                  <option value="all-staff">All Staff</option>
-                  <option value="all-parents">All Parents</option>
-                  <option value="all-students">All Students</option>
+                  <optgroup label="Groups">
+                    <option value="all-staff">All Staff</option>
+                    <option value="all-parents">All Parents</option>
+                    <option value="all-students">All Students</option>
+                  </optgroup>
+                  {users.length > 0 && (
+                    <optgroup label="Individual Users">
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.role.toLowerCase()}) - {user.email}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -403,7 +376,6 @@ export default function MessagesPage() {
             )}
           </div>
         )}
-      </main>
     </div>
   )
 }

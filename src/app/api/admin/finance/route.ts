@@ -17,8 +17,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Fetch all payments with student data
+    // Get query parameters
+    const { searchParams } = new URL(request.url)
+    const monthFilter = searchParams.get('month') // Format: YYYY-MM
+    const filterType = searchParams.get('filter') // due, paid, overdue
+
+    // Parse month filter
+    let startDate: Date | undefined
+    let endDate: Date | undefined
+    
+    if (monthFilter) {
+      const [year, month] = monthFilter.split('-').map(Number)
+      startDate = new Date(year, month - 1, 1)
+      endDate = new Date(year, month, 0, 23, 59, 59) // Last day of month
+    }
+
+    // Build where clause
+    let whereClause: any = {}
+    if (startDate && endDate) {
+      whereClause.dueDate = {
+        gte: startDate,
+        lte: endDate
+      }
+    }
+
+    // Apply filter type
+    if (filterType === 'due') {
+      whereClause.status = 'PENDING'
+    } else if (filterType === 'paid') {
+      whereClause.status = 'PAID'
+    } else if (filterType === 'overdue') {
+      whereClause.OR = [
+        { status: 'OVERDUE' },
+        { 
+          AND: [
+            { status: 'PENDING' },
+            { dueDate: { lt: new Date() } }
+          ]
+        }
+      ]
+    }
+
+    // Fetch filtered payments with student data
     const payments = await prisma.payment.findMany({
+      where: whereClause,
       include: {
         student: {
           include: {
@@ -31,23 +73,94 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Calculate financial statistics
+    // Calculate financial statistics for the current month or filtered period
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const currentStartOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const currentEndOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+    
+    // Use filtered period if provided, otherwise use current month
+    const statsStartDate = startDate || currentStartOfMonth
+    const statsEndDate = endDate || currentEndOfMonth
+    
+    // Get all payments for the stats period (not filtered by type)
+    const statsPayments = await prisma.payment.findMany({
+      where: {
+        dueDate: {
+          gte: statsStartDate,
+          lte: statsEndDate
+        }
+      },
+      include: {
+        student: true
+      }
+    })
+
+    // Get current school year data (September to July)
+    const currentSchoolYear = await prisma.schoolYear.findFirst({
+      where: { isActive: true }
+    })
+    
+    let schoolYearPayments: any[] = []
+    if (currentSchoolYear) {
+      schoolYearPayments = await prisma.payment.findMany({
+        where: {
+          schoolYearId: currentSchoolYear.id
+        },
+        include: {
+          student: true
+        }
+      })
+    }
+
+    // Calculate statistics
+    const duePayments = statsPayments.filter((p: any) => p.status === 'PENDING')
+    const paidPayments = statsPayments.filter((p: any) => p.status === 'PAID')
+    const overduePayments = statsPayments.filter((p: any) => 
+      p.status === 'OVERDUE' || (p.status === 'PENDING' && p.dueDate < now)
+    )
+
+    // Calculate school year statistics
+    const schoolYearDuePayments = schoolYearPayments.filter((p: any) => p.status === 'PENDING')
+    const schoolYearPaidPayments = schoolYearPayments.filter((p: any) => p.status === 'PAID')
+    const schoolYearOverduePayments = schoolYearPayments.filter((p: any) => 
+      p.status === 'OVERDUE' || (p.status === 'PENDING' && p.dueDate < now)
+    )
 
     const stats = {
       totalRevenue: payments
         .filter((p: any) => p.status === 'PAID')
-        .reduce((sum: number, p: any) => sum + p.amount, 0),
-      monthlyRevenue: payments
-        .filter((p: any) => p.status === 'PAID' && p.paymentDate && p.paymentDate >= startOfMonth)
-        .reduce((sum: number, p: any) => sum + p.amount, 0),
-      pendingAmount: payments
-        .filter((p: any) => p.status === 'PENDING')
-        .reduce((sum: number, p: any) => sum + p.amount, 0),
-      overdueAmount: payments
-        .filter((p: any) => p.status === 'OVERDUE' || (p.status === 'PENDING' && p.dueDate < now))
-        .reduce((sum: number, p: any) => sum + p.amount, 0),
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+      monthlyRevenue: paidPayments
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+      pendingAmount: duePayments
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+      overdueAmount: overduePayments
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+      
+      // Monthly breakdown statistics
+      monthly: {
+        totalDue: statsPayments.length,
+        totalDueAmount: statsPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+        paid: paidPayments.length,
+        paidAmount: paidPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+        pending: duePayments.length,
+        pendingAmount: duePayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+        overdue: overduePayments.length,
+        overdueAmount: overduePayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+      },
+      
+      // School year breakdown statistics
+      schoolYear: {
+        name: currentSchoolYear?.name || 'N/A',
+        totalDue: schoolYearPayments.length,
+        totalDueAmount: schoolYearPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+        paid: schoolYearPaidPayments.length,
+        paidAmount: schoolYearPaidPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+        pending: schoolYearDuePayments.length,
+        pendingAmount: schoolYearDuePayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0),
+        overdue: schoolYearOverduePayments.length,
+        overdueAmount: schoolYearOverduePayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+      },
       totalStudents: await prisma.student.count(),
       payingStudents: await prisma.student.count({
         where: {
@@ -65,7 +178,7 @@ export async function GET(request: NextRequest) {
       id: payment.id,
       studentCode: payment.student.studentCode,
       studentName: payment.student.user.name,
-      amount: payment.amount,
+      amount: Number(payment.amount),
       dueDate: payment.dueDate.toISOString(),
       status: payment.dueDate < now && payment.status === 'PENDING' ? 'OVERDUE' : payment.status,
       paidDate: payment.paidDate ? payment.paidDate.toISOString() : null,
@@ -150,7 +263,7 @@ export async function POST(request: NextRequest) {
         id: newPayment.id,
         studentCode: newPayment.student.studentCode,
         studentName: newPayment.student.user.name,
-        amount: newPayment.amount,
+        amount: Number(newPayment.amount),
         notes: newPayment.notes,
         dueDate: newPayment.dueDate.toISOString(),
         status: newPayment.status,

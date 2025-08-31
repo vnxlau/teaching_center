@@ -1,13 +1,11 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
-import { useI18n } from '@/lib/i18n'
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface StudentData {
   id: string
@@ -41,27 +39,14 @@ interface StudentData {
 }
 
 export default function StudentDashboard() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const [studentData, setStudentData] = useState<StudentData | null>(null)
   const [loading, setLoading] = useState(true)
-  const { t } = useI18n()
+  const { t } = useLanguage()
 
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-
-    if (session.user.role !== 'STUDENT') {
-      router.push('/auth/signin')
-      return
-    }
-
     fetchStudentData()
-  }, [session, status, router])
+  }, [])
 
   const fetchStudentData = async () => {
     try {
@@ -77,14 +62,9 @@ export default function StudentDashboard() {
     }
   }
 
-  const handleSignOut = async () => {
-    const { signOut } = await import('next-auth/react')
-    await signOut({ callbackUrl: '/' })
-  }
-
-  if (status === 'loading' || !session) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -96,54 +76,22 @@ export default function StudentDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">TC</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{t('navigation.studentPortal')}</h1>
-                  <p className="text-sm text-gray-600">{t('dashboard.welcomeBack')}, {session.user.name}</p>
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <LanguageSwitcher />
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                <p className="text-xs text-gray-500">{session.user.role}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                {t('common.signOut')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-8">
+      {/* Breadcrumb */}
+      <div className="mb-6">
+        <Breadcrumb items={breadcrumbItems} />
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Breadcrumb items={breadcrumbItems} />
-        </div>
-
+      <div className="space-y-8">
         {loading ? (
           <div className="flex justify-center py-12">
-            <LoadingSpinner size="lg" text={t('common.loadingDashboard')} />
+            <LoadingSpinner size="lg" text={t.loadingDashboard} />
           </div>
         ) : !studentData ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 text-6xl mb-4">📚</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.student.welcomeTitle')}</h3>
-            <p className="text-gray-600">{t('dashboard.student.welcomeDescription')}</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t.studentWelcomeTitle}</h3>
+            <p className="text-gray-600">{t.studentWelcomeDescription}</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -151,12 +99,9 @@ export default function StudentDashboard() {
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{t('dashboard.student.welcomeMessage', { name: studentData.firstName })}</h2>
-                  <p className="text-blue-100">
-                    {t('dashboard.student.studentInfo', { 
-                      studentCode: studentData.studentCode, 
-                      grade: studentData.grade 
-                    })}
+                                    <h2 className="text-2xl font-bold mb-2">{t.welcomeMessage}, {studentData.firstName}!</h2>
+                  <p className="text-gray-600 mb-4">
+                    {t.studentInfo} - Code: {studentData.studentCode}, Grade: {studentData.grade}
                   </p>
                 </div>
                 <div className="text-right">
@@ -349,7 +294,7 @@ export default function StudentDashboard() {
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   )
 }

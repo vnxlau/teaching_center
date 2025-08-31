@@ -6,23 +6,72 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting database seeding...')
 
-  // Create a school year
-  const schoolYear = await prisma.schoolYear.create({
-    data: {
+  // Create or update a school year
+  const schoolYear = await prisma.schoolYear.upsert({
+    where: { name: '2024-2025' },
+    update: {},
+    create: {
       name: '2024-2025',
       startDate: new Date('2024-09-01'),
       endDate: new Date('2025-06-30'),
       isActive: true,
     },
   })
-  console.log('✅ Created school year:', schoolYear.name)
+  console.log('✅ School year exists:', schoolYear.name)
+
+  // Create membership plans
+  const membershipPlans = [
+    {
+      name: 'Basic Plan',
+      description: 'Basic attendance plan for casual learners',
+      daysPerWeek: 2,
+      monthlyPrice: 80.00,
+      isActive: true
+    },
+    {
+      name: 'Standard Plan',
+      description: 'Standard plan for regular students',
+      daysPerWeek: 3,
+      monthlyPrice: 120.00,
+      isActive: true
+    },
+    {
+      name: 'Premium Plan',
+      description: 'Premium plan for intensive learning',
+      daysPerWeek: 4,
+      monthlyPrice: 160.00,
+      isActive: true
+    },
+    {
+      name: 'Elite Plan',
+      description: 'Elite plan for maximum learning potential',
+      daysPerWeek: 5,
+      monthlyPrice: 200.00,
+      isActive: true
+    }
+  ]
+
+  const createdMembershipPlans = []
+  for (const planData of membershipPlans) {
+    // Use @ts-ignore for now due to type generation issues
+    // @ts-ignore
+    const plan = await prisma.membershipPlan.upsert({
+      where: { name: planData.name },
+      update: planData,
+      create: planData,
+    })
+    createdMembershipPlans.push(plan)
+  }
+  console.log('✅ Membership plans exist')
 
   // Hash password for demo accounts
   const hashedPassword = await bcrypt.hash('demo123', 10)
 
-  // Create admin user and staff
-  const adminUser = await prisma.user.create({
-    data: {
+  // Create or update admin user and staff
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@teachingcenter.com' },
+    update: {},
+    create: {
       email: 'admin@teachingcenter.com',
       name: 'Admin User',
       password: hashedPassword,
@@ -30,8 +79,10 @@ async function main() {
     },
   })
 
-  const adminStaff = await prisma.staff.create({
-    data: {
+  const adminStaff = await prisma.staff.upsert({
+    where: { userId: adminUser.id },
+    update: {},
+    create: {
       userId: adminUser.id,
       firstName: 'Teaching Center',
       lastName: 'Administrator',
@@ -39,11 +90,13 @@ async function main() {
       phone: '+1234567890',
     },
   })
-  console.log('✅ Created admin user:', adminUser.email)
+  console.log('✅ Admin user exists:', adminUser.email)
 
-  // Create a teacher
-  const teacherUser = await prisma.user.create({
-    data: {
+  // Create or update a teacher
+  const teacherUser = await prisma.user.upsert({
+    where: { email: 'teacher@teachingcenter.com' },
+    update: {},
+    create: {
       email: 'teacher@teachingcenter.com',
       name: 'Maria Silva',
       password: hashedPassword,
@@ -51,8 +104,10 @@ async function main() {
     },
   })
 
-  const teacher = await prisma.staff.create({
-    data: {
+  const teacher = await prisma.staff.upsert({
+    where: { userId: teacherUser.id },
+    update: {},
+    create: {
       userId: teacherUser.id,
       firstName: 'Maria',
       lastName: 'Silva',
@@ -60,11 +115,13 @@ async function main() {
       phone: '+1234567891',
     },
   })
-  console.log('✅ Created teacher user:', teacherUser.email)
+  console.log('✅ Teacher user exists:', teacherUser.email)
 
-  // Create parent users
-  const parent1User = await prisma.user.create({
-    data: {
+  // Create or update parent users
+  const parent1User = await prisma.user.upsert({
+    where: { email: 'parent1@example.com' },
+    update: {},
+    create: {
       email: 'parent1@example.com',
       name: 'João Santos',
       password: hashedPassword,
@@ -72,8 +129,10 @@ async function main() {
     },
   })
 
-  const parent1 = await prisma.parent.create({
-    data: {
+  const parent1 = await prisma.parent.upsert({
+    where: { userId: parent1User.id },
+    update: {},
+    create: {
       userId: parent1User.id,
       firstName: 'João',
       lastName: 'Santos',
@@ -82,8 +141,10 @@ async function main() {
     },
   })
 
-  const parent2User = await prisma.user.create({
-    data: {
+  const parent2User = await prisma.user.upsert({
+    where: { email: 'parent2@example.com' },
+    update: {},
+    create: {
       email: 'parent2@example.com',
       name: 'Ana Costa',
       password: hashedPassword,
@@ -91,8 +152,10 @@ async function main() {
     },
   })
 
-  const parent2 = await prisma.parent.create({
-    data: {
+  const parent2 = await prisma.parent.upsert({
+    where: { userId: parent2User.id },
+    update: {},
+    create: {
       userId: parent2User.id,
       firstName: 'Ana',
       lastName: 'Costa',
@@ -100,11 +163,38 @@ async function main() {
       email: 'parent2@example.com',
     },
   })
-  console.log('✅ Created parent users')
+  console.log('✅ Parent users exist')
 
-  // Create student users
-  const student1User = await prisma.user.create({
-    data: {
+  // Create demo parent user for testing
+  const demoParentUser = await prisma.user.upsert({
+    where: { email: 'parent@teachingcenter.com' },
+    update: {},
+    create: {
+      email: 'parent@teachingcenter.com',
+      name: 'Demo Parent',
+      password: hashedPassword,
+      role: 'PARENT',
+    },
+  })
+
+  const demoParent = await prisma.parent.upsert({
+    where: { userId: demoParentUser.id },
+    update: {},
+    create: {
+      userId: demoParentUser.id,
+      firstName: 'Demo',
+      lastName: 'Parent',
+      phone: '+1234567899',
+      email: 'parent@teachingcenter.com',
+    },
+  })
+  console.log('✅ Demo parent user exists')
+
+  // Create or update student users
+  const student1User = await prisma.user.upsert({
+    where: { email: 'student1@example.com' },
+    update: {},
+    create: {
       email: 'student1@example.com',
       name: 'Pedro Santos',
       password: hashedPassword,
@@ -112,8 +202,10 @@ async function main() {
     },
   })
 
-  const student1 = await prisma.student.create({
-    data: {
+  const student1 = await prisma.student.upsert({
+    where: { userId: student1User.id },
+    update: {},
+    create: {
       userId: student1User.id,
       studentCode: 'TC2024001',
       firstName: 'Pedro',
@@ -124,11 +216,17 @@ async function main() {
       address: '123 Main Street, City',
       emergencyContact: 'João Santos - +1234567892',
       schoolYearId: schoolYear.id,
+      // @ts-ignore
+      membershipPlanId: createdMembershipPlans[1].id, // Standard Plan
+      // @ts-ignore
+      monthlyDueAmount: 120.00,
     },
   })
 
-  const student2User = await prisma.user.create({
-    data: {
+  const student2User = await prisma.user.upsert({
+    where: { email: 'student2@example.com' },
+    update: {},
+    create: {
       email: 'student2@example.com',
       name: 'Sofia Costa',
       password: hashedPassword,
@@ -136,8 +234,10 @@ async function main() {
     },
   })
 
-  const student2 = await prisma.student.create({
-    data: {
+  const student2 = await prisma.student.upsert({
+    where: { userId: student2User.id },
+    update: {},
+    create: {
       userId: student2User.id,
       studentCode: 'TC2024002',
       firstName: 'Sofia',
@@ -148,33 +248,159 @@ async function main() {
       address: '456 Oak Avenue, City',
       emergencyContact: 'Ana Costa - +1234567893',
       schoolYearId: schoolYear.id,
+      // @ts-ignore
+      membershipPlanId: createdMembershipPlans[2].id, // Premium Plan
+      // @ts-ignore
+      monthlyDueAmount: 160.00,
     },
   })
-  console.log('✅ Created student users')
+  console.log('✅ Student users exist')
 
-  // Create parent-student relationships
-  await prisma.studentParent.create({
-    data: {
+  // Create demo student user for testing
+  const demoStudentUser = await prisma.user.upsert({
+    where: { email: 'student@teachingcenter.com' },
+    update: {},
+    create: {
+      email: 'student@teachingcenter.com',
+      name: 'Demo Student',
+      password: hashedPassword,
+      role: 'STUDENT',
+    },
+  })
+
+  const demoStudent = await prisma.student.upsert({
+    where: { userId: demoStudentUser.id },
+    update: {},
+    create: {
+      userId: demoStudentUser.id,
+      studentCode: 'TC2024999',
+      firstName: 'Demo',
+      lastName: 'Student',
+      dateOfBirth: new Date('2012-01-01'),
+      grade: '6th Grade',
+      phone: '+1234567800',
+      address: '999 Demo Street, City',
+      emergencyContact: 'Demo Parent - +1234567899',
+      schoolYearId: schoolYear.id,
+      // @ts-ignore
+      membershipPlanId: createdMembershipPlans[0].id, // Basic Plan
+      // @ts-ignore
+      monthlyDueAmount: 80.00,
+    },
+  })
+  console.log('✅ Demo student user exists')
+
+  // Create or update parent-student relationships
+  await prisma.studentParent.upsert({
+    where: {
+      studentId_parentId: {
+        studentId: student1.id,
+        parentId: parent1.id,
+      },
+    },
+    update: {},
+    create: {
       studentId: student1.id,
       parentId: parent1.id,
       relationship: 'Father',
     },
   })
 
-  await prisma.studentParent.create({
-    data: {
+  await prisma.studentParent.upsert({
+    where: {
+      studentId_parentId: {
+        studentId: student2.id,
+        parentId: parent2.id,
+      },
+    },
+    update: {},
+    create: {
       studentId: student2.id,
       parentId: parent2.id,
       relationship: 'Mother',
     },
   })
-  console.log('✅ Created parent-student relationships')
 
-  // Create teaching plans
-  await prisma.teachingPlan.create({
-    data: {
+  // Add demo parent-student relationship
+  await prisma.studentParent.upsert({
+    where: {
+      studentId_parentId: {
+        studentId: demoStudent.id,
+        parentId: demoParent.id,
+      },
+    },
+    update: {},
+    create: {
+      studentId: demoStudent.id,
+      parentId: demoParent.id,
+      relationship: 'Parent',
+    },
+  })
+  console.log('✅ Parent-student relationships exist')
+
+  // Create or update subjects
+  const subjects = [
+    { name: 'Mathematics', description: 'Mathematics and problem solving', code: 'MATH' },
+    { name: 'English', description: 'English language and literature', code: 'ENG' },
+    { name: 'Science', description: 'General science and discovery', code: 'SCI' },
+    { name: 'History', description: 'World and local history', code: 'HIST' },
+    { name: 'Geography', description: 'Geography and social studies', code: 'GEO' },
+    { name: 'Physics', description: 'Physics and natural sciences', code: 'PHYS' },
+    { name: 'Chemistry', description: 'Chemistry and laboratory sciences', code: 'CHEM' },
+    { name: 'Biology', description: 'Biology and life sciences', code: 'BIO' },
+    { name: 'Art', description: 'Visual arts and creativity', code: 'ART' },
+    { name: 'Physical Education', description: 'Physical education and sports', code: 'PE' },
+    { name: 'Portuguese', description: 'Portuguese language and literature', code: 'PORT' },
+  ]
+
+  const createdSubjects = []
+  for (const subject of subjects) {
+    try {
+      // Try to find existing subject by name first, then by code
+      let existingSubject = await prisma.subject.findUnique({ where: { name: subject.name } })
+      if (!existingSubject && subject.code) {
+        existingSubject = await prisma.subject.findUnique({ where: { code: subject.code } })
+      }
+      
+      if (existingSubject) {
+        createdSubjects.push(existingSubject)
+      } else {
+        const newSubject = await prisma.subject.create({ data: subject })
+        createdSubjects.push(newSubject)
+      }
+    } catch (error) {
+      // If creation fails, try to find the existing one
+      const existingSubject = await prisma.subject.findFirst({
+        where: {
+          OR: [
+            { name: subject.name },
+            { code: subject.code }
+          ]
+        }
+      })
+      if (existingSubject) {
+        createdSubjects.push(existingSubject)
+      } else {
+        throw error // Re-throw if we can't find it
+      }
+    }
+  }
+  console.log('✅ Subjects exist')
+
+  // Get subject IDs for teaching plans
+  const mathSubject = createdSubjects.find(s => s.name === 'Mathematics')!
+  const portSubject = createdSubjects.find(s => s.name === 'Portuguese')!
+  const sciSubject = createdSubjects.find(s => s.name === 'Science')!
+  const histSubject = createdSubjects.find(s => s.name === 'History')!
+  const geoSubject = createdSubjects.find(s => s.name === 'Geography')!
+  const engSubject = createdSubjects.find(s => s.name === 'English')!
+
+  // Create or update teaching plans
+  const teachingPlan1 = await prisma.teachingPlan.upsert({
+    where: { studentId: student1.id },
+    update: {},
+    create: {
       studentId: student1.id,
-      subjects: ['Mathematics', 'Portuguese', 'Science'],
       goals: 'Improve problem-solving skills and reading comprehension',
       methodology: 'Interactive learning with practical exercises',
       schedule: 'Monday, Wednesday, Friday - 2:00 PM to 4:00 PM',
@@ -182,24 +408,68 @@ async function main() {
     },
   })
 
-  await prisma.teachingPlan.create({
-    data: {
+  // Create teaching plan subjects for student1
+  const student1Subjects = [mathSubject, portSubject, sciSubject]
+  await Promise.all(
+    student1Subjects.map(subject =>
+      prisma.teachingPlanSubject.upsert({
+        where: {
+          teachingPlanId_subjectId: {
+            teachingPlanId: teachingPlan1.id,
+            subjectId: subject.id,
+          },
+        },
+        update: {},
+        create: {
+          teachingPlanId: teachingPlan1.id,
+          subjectId: subject.id,
+        },
+      })
+    )
+  )
+
+  const teachingPlan2 = await prisma.teachingPlan.upsert({
+    where: { studentId: student2.id },
+    update: {},
+    create: {
       studentId: student2.id,
-      subjects: ['History', 'Geography', 'English'],
       goals: 'Enhance critical thinking and language skills',
       methodology: 'Discussion-based learning with multimedia resources',
       schedule: 'Tuesday, Thursday - 3:00 PM to 5:00 PM',
       notes: 'Student excels in creative writing',
     },
   })
-  console.log('✅ Created teaching plans')
 
-  // Create some payments
+  // Create teaching plan subjects for student2
+  const student2Subjects = [histSubject, geoSubject, engSubject]
+  await Promise.all(
+    student2Subjects.map(subject =>
+      prisma.teachingPlanSubject.upsert({
+        where: {
+          teachingPlanId_subjectId: {
+            teachingPlanId: teachingPlan2.id,
+            subjectId: subject.id,
+          },
+        },
+        update: {},
+        create: {
+          teachingPlanId: teachingPlan2.id,
+          subjectId: subject.id,
+        },
+      })
+    )
+  )
+  console.log('✅ Teaching plans exist')
+
+  // Create or update some payments
   const currentDate = new Date()
   const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
 
-  await prisma.payment.create({
-    data: {
+  await prisma.payment.upsert({
+    where: { id: 'seed-payment-1' },
+    update: {},
+    create: {
+      id: 'seed-payment-1',
       studentId: student1.id,
       schoolYearId: schoolYear.id,
       amount: 150.00,
@@ -212,8 +482,11 @@ async function main() {
     },
   })
 
-  await prisma.payment.create({
-    data: {
+  await prisma.payment.upsert({
+    where: { id: 'seed-payment-2' },
+    update: {},
+    create: {
+      id: 'seed-payment-2',
       studentId: student1.id,
       schoolYearId: schoolYear.id,
       amount: 150.00,
@@ -223,8 +496,11 @@ async function main() {
     },
   })
 
-  await prisma.payment.create({
-    data: {
+  await prisma.payment.upsert({
+    where: { id: 'seed-payment-3' },
+    update: {},
+    create: {
+      id: 'seed-payment-3',
       studentId: student2.id,
       schoolYearId: schoolYear.id,
       amount: 150.00,
@@ -236,24 +512,36 @@ async function main() {
       reference: 'REF002',
     },
   })
-  console.log('✅ Created payment records')
+  console.log('✅ Payment records exist')
 
   // Create a test
-  const test = await prisma.test.create({
-    data: {
+  const test = await prisma.test.upsert({
+    where: {
+      id: 'unique-test-seed-id', // We'll use a static ID to avoid duplicates
+    },
+    update: {},
+    create: {
+      id: 'unique-test-seed-id',
       schoolYearId: schoolYear.id,
       staffId: teacher.id,
       title: 'Mathematics Assessment - Algebra',
-      subject: 'Mathematics',
+      subjectId: mathSubject.id,
       description: 'Assessment covering linear equations and basic algebra concepts',
       scheduledDate: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 15),
       maxScore: 100.00,
     },
   })
 
-  // Create test results
-  await prisma.testResult.create({
-    data: {
+  // Create or update test results
+  await prisma.testResult.upsert({
+    where: {
+      testId_studentId: {
+        testId: test.id,
+        studentId: student1.id,
+      },
+    },
+    update: {},
+    create: {
       testId: test.id,
       studentId: student1.id,
       score: 85.50,
@@ -261,19 +549,29 @@ async function main() {
     },
   })
 
-  await prisma.testResult.create({
-    data: {
+  await prisma.testResult.upsert({
+    where: {
+      testId_studentId: {
+        testId: test.id,
+        studentId: student2.id,
+      },
+    },
+    update: {},
+    create: {
       testId: test.id,
       studentId: student2.id,
       score: 92.00,
       notes: 'Excellent performance, shows strong analytical skills',
     },
   })
-  console.log('✅ Created test and results')
+  console.log('✅ Test and results exist')
 
-  // Create some activities
-  const activity = await prisma.activity.create({
-    data: {
+  // Create or update some activities
+  const activity = await prisma.activity.upsert({
+    where: { id: 'seed-activity-1' },
+    update: {},
+    create: {
+      id: 'seed-activity-1',
       schoolYearId: schoolYear.id,
       staffId: teacher.id,
       title: 'Science Project Presentation',
@@ -283,8 +581,15 @@ async function main() {
     },
   })
 
-  await prisma.studentActivity.create({
-    data: {
+  await prisma.studentActivity.upsert({
+    where: {
+      studentId_activityId: {
+        studentId: student1.id,
+        activityId: activity.id,
+      },
+    },
+    update: {},
+    create: {
       studentId: student1.id,
       activityId: activity.id,
       status: 'IN_PROGRESS',
@@ -292,8 +597,15 @@ async function main() {
     },
   })
 
-  await prisma.studentActivity.create({
-    data: {
+  await prisma.studentActivity.upsert({
+    where: {
+      studentId_activityId: {
+        studentId: student2.id,
+        activityId: activity.id,
+      },
+    },
+    update: {},
+    create: {
       studentId: student2.id,
       activityId: activity.id,
       status: 'COMPLETED',
@@ -301,7 +613,7 @@ async function main() {
       notes: 'Outstanding presentation on wind energy',
     },
   })
-  console.log('✅ Created activities and student activities')
+  console.log('✅ Activities and student activities exist')
 
   // Create attendance records
   const attendanceDates = [
@@ -311,8 +623,15 @@ async function main() {
   ]
 
   for (const date of attendanceDates) {
-    await prisma.attendance.create({
-      data: {
+    await prisma.attendance.upsert({
+      where: {
+        studentId_date: {
+          studentId: student1.id,
+          date: date,
+        },
+      },
+      update: {},
+      create: {
         studentId: student1.id,
         schoolYearId: schoolYear.id,
         date: date,
@@ -320,8 +639,15 @@ async function main() {
       },
     })
 
-    await prisma.attendance.create({
-      data: {
+    await prisma.attendance.upsert({
+      where: {
+        studentId_date: {
+          studentId: student2.id,
+          date: date,
+        },
+      },
+      update: {},
+      create: {
         studentId: student2.id,
         schoolYearId: schoolYear.id,
         date: date,
@@ -329,13 +655,35 @@ async function main() {
       },
     })
   }
-  console.log('✅ Created attendance records')
+  console.log('✅ Attendance records exist')
+
+  // Create system settings
+  const systemSettings = [
+    { key: 'school_name', value: 'Teaching Center Excellence', description: 'Name of the educational institution', category: 'general' },
+    { key: 'school_address', value: '123 Education Street, Learning City, LC 12345', description: 'Physical address of the school', category: 'general' },
+    { key: 'school_phone', value: '+351 123 456 789', description: 'Main contact phone number', category: 'general' },
+    { key: 'school_email', value: 'info@teachingcenter.com', description: 'Main contact email address', category: 'general' },
+    { key: 'academic_year', value: '2024-2025', description: 'Current academic year period', category: 'academic' },
+    { key: 'currency', value: 'EUR', description: 'Default currency for financial operations', category: 'financial' },
+    { key: 'timezone', value: 'Europe/Lisbon', description: 'Default timezone for the institution', category: 'general' }
+  ]
+
+  for (const setting of systemSettings) {
+    await prisma.$executeRaw`
+      INSERT INTO system_settings (id, key, value, description, category, "dataType", "isPublic", "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), ${setting.key}, ${setting.value}, ${setting.description}, ${setting.category}, 'string', false, NOW(), NOW())
+      ON CONFLICT (key) DO NOTHING
+    `
+  }
+  console.log('✅ System settings exist')
 
   console.log('🎉 Database seeding completed successfully!')
   console.log('')
   console.log('📋 Demo Accounts Created:')
   console.log('Admin: admin@teachingcenter.com / demo123')
   console.log('Teacher: teacher@teachingcenter.com / demo123')
+  console.log('Parent (Demo): parent@teachingcenter.com / demo123')
+  console.log('Student (Demo): student@teachingcenter.com / demo123')
   console.log('Parent 1: parent1@example.com / demo123')
   console.log('Parent 2: parent2@example.com / demo123')
   console.log('Student 1: student1@example.com / demo123')

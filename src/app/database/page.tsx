@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import OwlIcon from '@/components/icons/OwlIcon'
 
 interface HealthData {
   totalUsers: number
@@ -48,6 +49,23 @@ export default function DatabaseDashboard() {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [schoolName, setSchoolName] = useState('Teaching Center')
+
+  // Fetch school name from system settings
+  useEffect(() => {
+    const fetchSchoolName = async () => {
+      try {
+        const response = await fetch('/api/admin/settings/system')
+        if (response.ok) {
+          const settings = await response.json()
+          setSchoolName(settings.schoolName || 'Teaching Center')
+        }
+      } catch (error) {
+        console.error('Failed to fetch school name:', error)
+      }
+    }
+    fetchSchoolName()
+  }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -115,9 +133,9 @@ export default function DatabaseDashboard() {
             <div className="flex items-center space-x-4">
               <Link href="/" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">TC</span>
+                  <OwlIcon className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-lg font-semibold">Teaching Center</span>
+                <span className="text-lg font-semibold">{schoolName}</span>
               </Link>
               <span className="text-gray-400">•</span>
               <h1 className="text-xl font-semibold text-gray-900">Database Dashboard</h1>

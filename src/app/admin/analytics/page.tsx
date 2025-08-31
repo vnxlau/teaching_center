@@ -108,46 +108,36 @@ export default function AdminAnalytics() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin/dashboard" className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">TC</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-                  <p className="text-sm text-gray-600">Comprehensive insights and reporting</p>
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <select
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value as 'week' | 'month' | 'quarter')}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="week">Last Week</option>
-                <option value="month">Last Month</option>
-                <option value="quarter">Last Quarter</option>
-              </select>
-              <Link
-                href="/admin/dashboard"
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Back to Dashboard
-              </Link>
-            </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h2>
+            <p className="text-gray-600 mt-2">Comprehensive insights and reporting</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value as 'week' | 'month' | 'quarter')}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="week">Last Week</option>
+              <option value="month">Last Month</option>
+              <option value="quarter">Last Quarter</option>
+            </select>
+            <Link
+              href="/admin/dashboard"
+              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Back to Dashboard
+            </Link>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
+      {/* Breadcrumb */}
+      <div className="mb-6">
           <Breadcrumb items={breadcrumbItems} />
         </div>
 
@@ -368,7 +358,6 @@ export default function AdminAnalytics() {
             </div>
           </div>
         )}
-      </main>
     </div>
   )
 }

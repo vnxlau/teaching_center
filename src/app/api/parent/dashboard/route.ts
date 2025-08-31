@@ -27,14 +27,34 @@ export async function GET(request: NextRequest) {
               include: {
                 tests: {
                   include: {
-                    test: true
+                    test: {
+                      include: {
+                        subject: {
+                          select: {
+                            name: true
+                          }
+                        }
+                      }
+                    }
                   },
                   orderBy: {
                     createdAt: 'desc'
                   },
                   take: 5
                 },
-                teachingPlan: true,
+                teachingPlan: {
+                  include: {
+                    subjects: {
+                      include: {
+                        subject: {
+                          select: {
+                            name: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
                 payments: {
                   where: {
                     status: {
@@ -63,6 +83,13 @@ export async function GET(request: NextRequest) {
         },
         isActive: true
       },
+      include: {
+        subject: {
+          select: {
+            name: true
+          }
+        }
+      },
       orderBy: {
         scheduledDate: 'asc'
       }
@@ -75,9 +102,9 @@ export async function GET(request: NextRequest) {
       const overduePayments = student.payments.filter((payment: any) => payment.status === 'OVERDUE').length
 
       // Get upcoming tests for this student's subjects
-      const studentSubjects = student.teachingPlan?.subjects || []
+      const studentSubjects = student.teachingPlan?.subjects?.map((tps: any) => tps.subject.name) || []
       const studentUpcomingTests = upcomingTests.filter((test: any) =>
-        studentSubjects.includes(test.subject)
+        studentSubjects.includes(test.subject.name)
       )
 
       return {
@@ -89,7 +116,7 @@ export async function GET(request: NextRequest) {
         recentGrades: student.tests.map((result: any) => ({
           test: {
             title: result.test.title,
-            subject: result.test.subject,
+            subject: result.test.subject.name,
             maxScore: result.test.maxScore
           },
           score: result.score,
@@ -97,7 +124,7 @@ export async function GET(request: NextRequest) {
         })),
         upcomingTests: studentUpcomingTests.map((test: any) => ({
           title: test.title,
-          subject: test.subject,
+          subject: test.subject.name,
           scheduledDate: test.scheduledDate.toISOString()
         })),
         paymentStatus: {
@@ -105,7 +132,7 @@ export async function GET(request: NextRequest) {
           overdue: overduePayments
         },
         teachingPlan: student.teachingPlan ? {
-          subjects: student.teachingPlan.subjects,
+          subjects: student.teachingPlan.subjects.map((tps: any) => tps.subject.name),
           goals: student.teachingPlan.goals
         } : null
       }

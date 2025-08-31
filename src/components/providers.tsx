@@ -1,7 +1,7 @@
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
-import { I18nProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -10,9 +10,9 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
-      <I18nProvider>
+      <LanguageProvider>
         {children}
-      </I18nProvider>
+      </LanguageProvider>
     </SessionProvider>
   )
 }

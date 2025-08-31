@@ -1,7 +1,6 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
@@ -16,99 +15,40 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
-  const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/auth/signin')
-      return
+    if (session) {
+      fetchStats()
     }
+  }, [session])
 
-    // Check if user has admin or staff role
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
-      router.push('/auth/signin')
-      return
-    }
-
-    // Fetch dashboard stats
-    fetchDashboardStats()
-  }, [session, status, router])
-
-  const fetchDashboardStats = async () => {
+  const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/stats')
+      const response = await fetch('/api/admin/dashboard-stats')
       if (response.ok) {
         const data = await response.json()
         setStats(data)
       }
     } catch (error) {
-      console.error('Failed to fetch stats:', error)
+      console.error('Failed to fetch dashboard stats:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSignOut = async () => {
-    const { signOut } = await import('next-auth/react')
-    await signOut({ callbackUrl: '/' })
-  }
-
-  if (status === 'loading' || !session) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading session...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">TC</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Teaching Center Management System</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/admin/analytics"
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Analytics</span>
-              </Link>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                <p className="text-xs text-gray-500">{session.user.role}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-8">
         {/* Welcome Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -318,7 +258,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-      </main>
     </div>
   )
 }

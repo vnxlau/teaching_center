@@ -81,11 +81,11 @@ export async function GET(request: NextRequest) {
     // Calculate financial metrics
     const monthlyRevenue = payments
       .filter((p: any) => p.status === 'PAID')
-      .reduce((sum: number, p: any) => sum + p.amount, 0)
+      .reduce((sum: number, p: any) => sum + Number(p.amount), 0)
 
     const pendingPayments = payments
       .filter((p: any) => p.status === 'PENDING')
-      .reduce((sum: number, p: any) => sum + p.amount, 0)
+      .reduce((sum: number, p: any) => sum + Number(p.amount), 0)
 
     // Calculate performance metrics
     const gradePercentages = grades.map((grade: any) => 
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
           acc[method] = { count: 0, amount: 0 }
         }
         acc[method].count += 1
-        acc[method].amount += payment.amount
+        acc[method].amount += Number(payment.amount)
         return acc
       }, {} as Record<string, { count: number; amount: number }>)
 
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
         pendingAmount: pendingPayments,
         overdueAmount: payments
           .filter((p: any) => p.status === 'OVERDUE')
-          .reduce((sum: number, p: any) => sum + p.amount, 0),
+          .reduce((sum: number, p: any) => sum + Number(p.amount), 0),
         paymentMethods: paymentMethodsArray
       },
       recentActivity

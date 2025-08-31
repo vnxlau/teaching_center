@@ -17,36 +17,62 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Fetch all students with related data
-    const students = await prisma.student.findMany({
-      include: {
-        user: true,
-        parents: {
-          include: {
-            parent: {
-              include: {
-                user: true
-              }
+    // Fetch all students with related data using raw SQL for now (until migration is applied)
+    const studentsRaw = await prisma.$queryRaw`
+      SELECT 
+        s.id,
+        s."studentCode",
+        s."firstName", 
+        s."lastName",
+        s.grade,
+        s."isActive",
+        s."enrollmentDate",
+        s."monthlyDueAmount",
+        s."discountRate",
+        u.email,
+        mp.id as "membershipPlanId",
+        mp.name as "membershipPlanName",
+        mp."daysPerWeek" as "membershipPlanDaysPerWeek",
+        mp."monthlyPrice" as "membershipPlanMonthlyPrice"
+      FROM students s
+      JOIN users u ON s."userId" = u.id
+      LEFT JOIN membership_plans mp ON s."membershipPlanId" = mp.id
+      ORDER BY s."createdAt" DESC
+    ` as any[]
+
+    // Get parent information and other data
+    const students = await Promise.all(studentsRaw.map(async (student) => {
+      // Get parent info
+      const parentRelations = await prisma.studentParent.findMany({
+        where: { studentId: student.id },
+        include: {
+          parent: {
+            include: {
+              user: true
             }
           }
-        },
-        payments: {
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 1
-        },
-        tests: {
-          include: {
-            test: true
-          }
-        },
-        teachingPlan: true
-      },
-      orderBy: {
-        createdAt: 'desc'
+        }
+      })
+
+      // Get recent payment
+      const recentPayment = await prisma.payment.findFirst({
+        where: { studentId: student.id },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      // Get test results for average
+      const testResults = await prisma.testResult.findMany({
+        where: { studentId: student.id },
+        include: { test: true }
+      })
+
+      return {
+        ...student,
+        parents: parentRelations,
+        payments: recentPayment ? [recentPayment] : [],
+        tests: testResults
       }
-    })
+    }))
 
     // Transform data for frontend
     const transformedStudents = students.map((student: any) => {
@@ -68,14 +94,27 @@ export async function GET(request: NextRequest) {
       const parentRelation = student.parents[0]
       const parent = parentRelation?.parent
 
+      // Build membership plan object if exists
+      const membershipPlan = student.membershipPlanId ? {
+        id: student.membershipPlanId,
+        name: student.membershipPlanName,
+        daysPerWeek: student.membershipPlanDaysPerWeek,
+        monthlyPrice: parseFloat(student.membershipPlanMonthlyPrice) || 0
+      } : null
+
       return {
         id: student.id,
         studentCode: student.studentCode,
         firstName: student.firstName,
         lastName: student.lastName,
-        email: student.user.email,
+        name: `${student.firstName} ${student.lastName}`, // Add combined name field
+        email: student.email,
         grade: student.grade,
+        status: student.isActive ? 'ACTIVE' : 'INACTIVE', // Convert boolean to status string
         enrollmentDate: student.enrollmentDate.toISOString(),
+        monthlyDueAmount: student.monthlyDueAmount ? parseFloat(student.monthlyDueAmount) : null,
+        discountRate: student.discountRate ? parseFloat(student.discountRate) : 0,
+        membershipPlan: membershipPlan,
         parentName: parent ? parent.user.name : null,
         parentEmail: parent ? parent.user.email : null,
         paymentStatus: {

@@ -1,0 +1,47 @@
+# Local Development Docker Compose Configuration
+# This file starts only the PostgreSQL database for local development
+# Your Next.js app runs locally with 'npm run dev'
+
+services:
+  # PostgreSQL Database Only
+  postgres:
+    image: postgres:15
+    container_name: teachingcenter-postgres-local
+    environment:
+      POSTGRES_DB: teachingcenter
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5433:5432"  # Use port 5433 externally to avoid conflicts with local PostgreSQL
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d teachingcenter"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - teachingcenter-local
+
+  # Database Admin Interface (optional - access at http://localhost:8080)
+  adminer:
+    image: adminer
+    container_name: teachingcenter-adminer-local
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - teachingcenter-local
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  postgres_data_local:
+
+networks:
+  teachingcenter-local:
+    driver: bridge

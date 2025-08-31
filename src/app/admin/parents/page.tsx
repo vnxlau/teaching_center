@@ -1,7 +1,6 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
@@ -33,29 +32,22 @@ interface ParentStats {
 }
 
 export default function ParentManagement() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const [parents, setParents] = useState<Parent[]>([])
   const [stats, setStats] = useState<ParentStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/auth/signin')
-      return
+    if (session) {
+      fetchParentData()
     }
+  }, [session])
 
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
-      router.push('/auth/signin')
-      return
-    }
-
-    fetchParentData()
-  }, [session, status, router])
+  const fetchParents = () => fetchParentData()
+  const fetchStats = () => fetchParentData()
 
   const fetchParentData = async () => {
     try {
@@ -101,68 +93,17 @@ export default function ParentManagement() {
     }
   }
 
-  if (status === 'loading' || !session) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading session...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin/dashboard" className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">TC</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Parent Management</h1>
-                  <p className="text-sm text-gray-600">Manage parent information and communication</p>
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/admin/dashboard" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Dashboard
-                </Link>
-                <Link href="/admin/students" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Students
-                </Link>
-                <Link href="/admin/finance" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Finance
-                </Link>
-                <Link href="/admin/academic" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Academic
-                </Link>
-                <Link href="/admin/parents" className="text-primary-600 font-medium">
-                  Parents
-                </Link>
-              </nav>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                <p className="text-xs text-gray-500">{session.user.role}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-8">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
@@ -387,7 +328,6 @@ export default function ParentManagement() {
             </div>
           )}
         </div>
-      </main>
     </div>
   )
 }
