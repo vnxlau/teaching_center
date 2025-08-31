@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,8 +14,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await params
     const subject = await (prisma as any).subject.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         tests: {
           select: {
@@ -61,7 +62,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -70,6 +71,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await params
     const body = await request.json()
     const { name, description, code, isActive } = body
 
@@ -78,7 +80,7 @@ export async function PATCH(
       const existingSubject = await (prisma as any).subject.findFirst({
         where: {
           AND: [
-            { id: { not: params.id } },
+            { id: { not: resolvedParams.id } },
             {
               OR: [
                 ...(name ? [{ name }] : []),
@@ -98,7 +100,7 @@ export async function PATCH(
     }
 
     const subject = await (prisma as any).subject.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         ...(name && { name }),
         ...(description !== undefined && { description }),
@@ -120,7 +122,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -129,9 +131,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await params
     // Check if subject is being used
     const subjectUsage = await (prisma as any).subject.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         tests: { select: { id: true } },
         teachingPlans: { select: { id: true } }
@@ -150,7 +153,7 @@ export async function DELETE(
     }
 
     await (prisma as any).subject.delete({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     return NextResponse.json({ message: 'Subject deleted successfully' })

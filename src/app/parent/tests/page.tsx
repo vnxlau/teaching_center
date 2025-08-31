@@ -173,7 +173,7 @@ export default function ParentTestsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Tests & Assessments</h2>
-          <p className="text-gray-600 mt-2">View your children's test results and create test requests</p>
+          <p className="text-gray-600 mt-2">View your children&apos;s test results and create test requests</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}

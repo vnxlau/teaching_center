@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,7 +14,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const studentId = params.id
+    const resolvedParams = await params
+    const studentId = resolvedParams.id
 
     // Check if student exists
     const existingStudent = await prisma.student.findUnique({
@@ -34,7 +35,7 @@ export async function DELETE(
       await tx.payment.deleteMany({ where: { studentId } })
       await tx.testResult.deleteMany({ where: { studentId } })
       await tx.attendance.deleteMany({ where: { studentId } })
-      await tx.activity.deleteMany({ where: { studentId } })
+      // Note: Activities are not directly related to students, so we skip them
       await tx.message.deleteMany({ 
         where: { 
           OR: [
@@ -67,7 +68,7 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -76,7 +77,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const studentId = params.id
+    const resolvedParams = await params
+    const studentId = resolvedParams.id
     const body = await request.json()
 
     // Check if student exists
@@ -95,8 +97,7 @@ export async function PUT(
       const updatedUser = await tx.user.update({
         where: { id: existingStudent.userId },
         data: {
-          firstName: body.firstName,
-          lastName: body.lastName,
+          name: `${body.firstName} ${body.lastName}`,
           email: body.email,
           phone: body.phone || null,
         }
@@ -107,7 +108,7 @@ export async function PUT(
         where: { id: studentId },
         data: {
           grade: body.grade || null,
-          dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : null,
+          dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
           address: body.address || null,
           emergencyContact: body.emergencyContact || null,
           notes: body.notes || null,

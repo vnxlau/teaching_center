@@ -1197,7 +1197,7 @@ function AddStudentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                 <h4 className="text-sm font-medium text-yellow-800">Important Notes:</h4>
                 <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside space-y-1">
                   <li>A unique student code will be automatically generated</li>
-                  <li>Default password "demo123" will be set for all accounts</li>
+                  <li>Default password &quot;demo123&quot; will be set for all accounts</li>
                   <li>At least one parent/guardian is required</li>
                   <li>Parent emails are optional but recommended for portal access</li>
                   <li>All data can be edited later from the student management panel</li>
