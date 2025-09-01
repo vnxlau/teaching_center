@@ -61,6 +61,8 @@ export default function MembershipPlansPage() {
   const [stats, setStats] = useState<PlanStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<MembershipPlan | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     daysPerWeek: 1,
@@ -91,6 +93,44 @@ export default function MembershipPlansPage() {
       setStats(data.stats || null)
     } catch (error) {
       console.error('Error fetching stats:', error)
+    }
+  }
+
+  const handleEditPlan = (plan: MembershipPlan) => {
+    setEditingPlan(plan)
+    setFormData({
+      name: plan.name,
+      daysPerWeek: plan.daysPerWeek,
+      monthlyPrice: plan.monthlyPrice
+    })
+    setShowEditModal(true)
+  }
+
+  const handleUpdatePlan = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!editingPlan) return
+
+    try {
+      const response = await fetch(`/api/admin/membership-plans/${editingPlan.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (response.ok) {
+        setShowEditModal(false)
+        setEditingPlan(null)
+        setFormData({ name: '', daysPerWeek: 1, monthlyPrice: 0 })
+        fetchPlans()
+        fetchStats() // Refresh stats after updating a plan
+      } else {
+        console.error('Error updating plan')
+      }
+    } catch (error) {
+      console.error('Error updating plan:', error)
     }
   }
 
@@ -288,7 +328,11 @@ export default function MembershipPlansPage() {
       {/* Plans Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans.map((plan) => (
-          <div key={plan.id} className="bg-white overflow-hidden shadow rounded-lg">
+          <div 
+            key={plan.id} 
+            className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200 hover:bg-gray-50"
+            onClick={() => handleEditPlan(plan)}
+          >
             <div className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -410,6 +454,108 @@ export default function MembershipPlansPage() {
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     Create Plan
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Plan Modal */}
+      {showEditModal && editingPlan && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Membership Plan</h3>
+              
+              <form onSubmit={handleUpdatePlan} className="space-y-4">
+                <div>
+                  <label htmlFor="editName" className="block text-sm font-medium text-gray-700">
+                    Plan Name
+                  </label>
+                  <input
+                    type="text"
+                    id="editName"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="e.g., Premium Plan"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="editDaysPerWeek" className="block text-sm font-medium text-gray-700">
+                    Days per Week
+                  </label>
+                  <select
+                    id="editDaysPerWeek"
+                    value={formData.daysPerWeek}
+                    onChange={(e) => setFormData({ ...formData, daysPerWeek: parseInt(e.target.value) })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                      <option key={day} value={day}>{day} {day === 1 ? 'day' : 'days'}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="editMonthlyPrice" className="block text-sm font-medium text-gray-700">
+                    Monthly Price (€)
+                  </label>
+                  <input
+                    type="number"
+                    id="editMonthlyPrice"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={formData.monthlyPrice}
+                    onChange={(e) => setFormData({ ...formData, monthlyPrice: parseFloat(e.target.value) || 0 })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800">
+                        Important Note
+                      </h3>
+                      <div className="mt-2 text-sm text-yellow-700">
+                        <p>
+                          This plan has {editingPlan.studentCount} enrolled student{editingPlan.studentCount !== 1 ? 's' : ''}. 
+                          Price changes will affect future payments for these students.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false)
+                      setEditingPlan(null)
+                      setFormData({ name: '', daysPerWeek: 1, monthlyPrice: 0 })
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Update Plan
                   </button>
                 </div>
               </form>

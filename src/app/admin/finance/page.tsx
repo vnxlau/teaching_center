@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/Modal'
+import AutoPaymentGenerator from '@/components/admin/AutoPaymentGenerator'
 
 interface Payment {
   id: string
@@ -37,6 +38,8 @@ export default function FinanceManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [students, setStudents] = useState<{ id: string, name: string, studentCode: string }[]>([])
+  const [currentSchoolYearId, setCurrentSchoolYearId] = useState<string | null>(null)
+  const [currentMonthStats, setCurrentMonthStats] = useState<any>(null)
   const [newPayment, setNewPayment] = useState({
     studentId: '',
     amount: '',
@@ -60,6 +63,34 @@ export default function FinanceManagement() {
     }
   }, [])
 
+  const fetchCurrentSchoolYear = async () => {
+    try {
+      const response = await fetch('/api/admin/school-years/current')
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentSchoolYearId(data.schoolYear?.id || null)
+      }
+    } catch (error) {
+      console.error('Failed to fetch current school year:', error)
+    }
+  }
+
+  const fetchCurrentMonthStats = async () => {
+    try {
+      const currentDate = new Date()
+      const currentMonth = currentDate.getMonth() + 1
+      const currentYear = currentDate.getFullYear()
+      
+      const response = await fetch(`/api/admin/finance/monthly-stats?month=${currentMonth}&year=${currentYear}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentMonthStats(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch current month stats:', error)
+    }
+  }
+
   useEffect(() => {
     if (status === 'loading') return
 
@@ -74,6 +105,8 @@ export default function FinanceManagement() {
     }
 
     fetchFinancialData()
+    fetchCurrentSchoolYear()
+    fetchCurrentMonthStats()
   }, [session, status, router, fetchFinancialData])
 
   const fetchStudents = async () => {
@@ -137,6 +170,16 @@ export default function FinanceManagement() {
   const handleSignOut = async () => {
     const { signOut } = await import('next-auth/react')
     await signOut({ callbackUrl: '/' })
+  }
+
+  const handleCardFilter = (filterType: string) => {
+    setFilterStatus(filterType)
+    setSearchTerm('') // Clear search when using card filters
+  }
+
+  const getCurrentMonthName = () => {
+    const now = new Date()
+    return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   }
 
   const filteredPayments = payments.filter(payment => {
@@ -240,6 +283,103 @@ export default function FinanceManagement() {
           </div>
         </div>
 
+        {/* Current Month Focus Section */}
+        {currentMonthStats && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                📅 {currentMonthStats.monthName} Data
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Due Payments (Total) */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-blue-50"
+                  onClick={() => handleCardFilter('all')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Due Payments</p>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-2xl font-bold text-blue-600">
+                          {currentMonthStats.stats.totalPayments.count}
+                        </span>
+                        <span className="text-sm text-gray-500">payments</span>
+                      </div>
+                      <p className="text-lg font-semibold text-blue-700">
+                        €{currentMonthStats.stats.totalPayments.amount.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Paid Payments */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-green-50"
+                  onClick={() => handleCardFilter('paid')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Paid</p>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-2xl font-bold text-green-600">
+                          {currentMonthStats.stats.paidPayments.count}
+                        </span>
+                        <span className="text-sm text-gray-500">payments</span>
+                      </div>
+                      <p className="text-lg font-semibold text-green-700">
+                        €{currentMonthStats.stats.paidPayments.amount.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Still Due Payments */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-yellow-50"
+                  onClick={() => handleCardFilter('pending')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Still Due</p>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-2xl font-bold text-yellow-600">
+                          {currentMonthStats.stats.stillDuePayments.count}
+                        </span>
+                        <span className="text-sm text-gray-500">payments</span>
+                      </div>
+                      <p className="text-lg font-semibold text-yellow-700">
+                        €{currentMonthStats.stats.stillDuePayments.amount.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 text-center">
+                <p className="text-sm text-blue-700">
+                  💡 Click on any card above to filter the payment list below
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Financial Stats */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -305,6 +445,24 @@ export default function FinanceManagement() {
                   <p className="text-2xl font-bold text-gray-900">€{stats.overdueAmount.toLocaleString()}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Automatic Payment Generator */}
+        {currentSchoolYearId && (
+          <div className="mb-8">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                🔄 Automatic Payment Generation
+              </h3>
+              <AutoPaymentGenerator 
+                schoolYearId={currentSchoolYearId}
+                onPaymentsGenerated={() => {
+                  fetchFinancialData()
+                  fetchCurrentMonthStats()
+                }}
+              />
             </div>
           </div>
         )}
