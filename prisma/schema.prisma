@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,159 +7,125 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Management
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      UserRole @default(STUDENT)
-  
-  // Additional profile fields
-  phone              String?
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
+  password           String
+  role               UserRole  @default(STUDENT)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
   address            String?
+  emailNotifications Boolean   @default(true)
+  language           String    @default("en")
+  phone              String?
+  smsNotifications   Boolean   @default(true)
   vatNumber          String?
-  language           String   @default("en")
-  emailNotifications Boolean  @default(true)
-  smsNotifications   Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  student Student?
-  parent  Parent?
-  staff   Staff?
-
-  // Message relations
-  sentMessages     Message[] @relation(name: "SentMessages")
-  receivedMessages Message[] @relation(name: "ReceivedMessages")
+  receivedMessages   Message[] @relation("ReceivedMessages")
+  sentMessages       Message[] @relation("SentMessages")
+  parent             Parent?
+  staff              Staff?
+  student            Student?
 
   @@map("users")
 }
 
-enum UserRole {
-  ADMIN
-  STAFF
-  STUDENT
-  PARENT
-}
-
-// School Year Management
 model SchoolYear {
-  id        String   @id @default(cuid())
-  name      String   @unique // e.g., "2024-2025"
-  startDate DateTime
-  endDate   DateTime
-  isActive  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  students     Student[]
-  payments     Payment[]
-  tests        Test[]
-  attendances  Attendance[]
-  activities   Activity[]
+  id          String       @id @default(cuid())
+  name        String       @unique
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  activities  Activity[]
+  attendances Attendance[]
+  payments    Payment[]
+  students    Student[]
+  tests       Test[]
 
   @@map("school_years")
 }
 
-// Student Management
 model Student {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  studentCode  String    @unique // Auto-generated student code
-  firstName    String
-  lastName     String
-  dateOfBirth  DateTime
-  grade        String?   // Current grade/class
-  phone        String?
-  address      String?
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  studentCode      String            @unique
+  firstName        String
+  lastName         String
+  dateOfBirth      DateTime
+  grade            String?
+  phone            String?
+  address          String?
   emergencyContact String?
-  enrollmentDate DateTime @default(now())
-  isActive     Boolean   @default(true)
-  notes        String?
-  
-  // Membership and Payment Information
-  membershipPlanId String?           // Reference to membership plan
-  monthlyDueAmount Decimal? @db.Decimal(10, 2) // Calculated monthly amount after discount
-  discountRate     Decimal  @default(0) @db.Decimal(5, 2) // Discount rate (0-100%)
-  
-  // School year association
-  schoolYearId String
-  
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id])
-  membershipPlan MembershipPlan? @relation(fields: [membershipPlanId], references: [id])
-  parents      StudentParent[]
-  payments     Payment[]
-  attendances  Attendance[]
-  tests        TestResult[]
-  activities   StudentActivity[]
-  teachingPlan TeachingPlan?
+  enrollmentDate   DateTime          @default(now())
+  isActive         Boolean           @default(true)
+  notes            String?
+  schoolYearId     String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  discountRate     Decimal           @default(0) @db.Decimal(5, 2)
+  membershipPlanId String?
+  monthlyDueAmount Decimal?          @db.Decimal(10, 2)
+  attendances      Attendance[]
+  payments         Payment[]
+  activities       StudentActivity[]
+  parents          StudentParent[]
+  membershipPlan   MembershipPlan?   @relation(fields: [membershipPlanId], references: [id])
+  schoolYear       SchoolYear        @relation(fields: [schoolYearId], references: [id])
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teachingPlan     TeachingPlan?
+  tests            TestResult[]
+  schedules        StudentSchedule[]
 
   @@map("students")
 }
 
-// Parent Management
 model Parent {
-  id        String   @id @default(cuid())
-  userId    String   @unique
+  id        String          @id @default(cuid())
+  userId    String          @unique
   firstName String
   lastName  String
   phone     String?
   email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  students StudentParent[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students  StudentParent[]
 
   @@map("parents")
 }
 
-// Many-to-many relationship between students and parents
 model StudentParent {
-  id         String @id @default(cuid())
-  studentId  String
-  parentId   String
-  relationship String // "Father", "Mother", "Guardian", etc.
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  parent  Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  id           String  @id @default(cuid())
+  studentId    String
+  parentId     String
+  relationship String
+  parent       Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student      Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, parentId])
   @@map("student_parents")
 }
 
-// Staff Management
 model Staff {
-  id        String    @id @default(cuid())
-  userId    String    @unique
-  firstName String
-  lastName  String
-  position  String    // "Teacher", "Administrator", "Director", etc.
-  phone     String?
-  hireDate  DateTime  @default(now())
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  // Relations
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tests     Test[]
+  id         String     @id @default(cuid())
+  userId     String     @unique
+  firstName  String
+  lastName   String
+  position   String
+  phone      String?
+  hireDate   DateTime   @default(now())
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
   activities Activity[]
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tests      Test[]
 
   @@map("staff")
 }
 
-// Financial Management
 model Payment {
   id           String        @id @default(cuid())
   studentId    String
@@ -172,17 +135,76 @@ model Payment {
   paidDate     DateTime?
   status       PaymentStatus @default(PENDING)
   paymentType  PaymentType   @default(MONTHLY_FEE)
-  method       String?       // "Cash", "Bank Transfer", "Card", etc.
-  reference    String?       // Payment reference/receipt number
+  method       String?
+  reference    String?
   notes        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-
-  // Relations
-  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  schoolYear SchoolYear @relation(fields: [schoolYearId], references: [id])
+  schoolYear   SchoolYear    @relation(fields: [schoolYearId], references: [id])
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+
+model Subject {
+  id            String                @id @default(cuid())
+  name          String                @unique
+  description   String?
+  code          String?               @unique
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  teachingPlans TeachingPlanSubject[]
+  tests         Test[]
+
+  @@map("subjects")
+}
+
+model TeachingPlanSubject {
+  id             String       @id @default(cuid())
+  teachingPlanId String
+  subjectId      String
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teachingPlan   TeachingPlan @relation(fields: [teachingPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([teachingPlanId, subjectId])
+  @@map("teaching_plan_subjects")
+}
+
+model TeachingPlan {
+  id          String                @id @default(cuid())
+  studentId   String                @unique
+  goals       String?
+  methodology String?
+  schedule    String?
+  notes       String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  subjects    TeachingPlanSubject[]
+  student     Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+    @@map("teaching_plans")
+}
+
+model StudentSchedule {
+  id           String   @id @default(cuid())
+  studentId    String
+  dayOfWeek    DayOfWeek
+  isLocked     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, dayOfWeek])
+  @@map("student_schedules")
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
 }
 
 enum PaymentStatus {
@@ -192,81 +214,22 @@ enum PaymentStatus {
   CANCELLED
 }
 
-enum PaymentType {
-  MONTHLY_FEE
-  REGISTRATION_FEE
-  EXAM_FEE
-  MATERIAL_FEE
-  OTHER
-}
-
-// Subject Management
-model Subject {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  code        String?  @unique // Optional subject code like "MATH", "SCI", etc.
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  tests        Test[]
-  teachingPlans TeachingPlanSubject[]
-
-  @@map("subjects")
-}
-
-// Many-to-many relationship between teaching plans and subjects
-model TeachingPlanSubject {
-  id             String @id @default(cuid())
-  teachingPlanId String
-  subjectId      String
-
-  teachingPlan TeachingPlan @relation(fields: [teachingPlanId], references: [id], onDelete: Cascade)
-  subject      Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-
-  @@unique([teachingPlanId, subjectId])
-  @@map("teaching_plan_subjects")
-}
-
-// Teaching Plans
-model TeachingPlan {
-  id          String   @id @default(cuid())
-  studentId   String   @unique
-  goals       String?  // Learning goals
-  methodology String?  // Teaching methodology
-  schedule    String?  // Weekly schedule
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  student  Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subjects TeachingPlanSubject[]
-
-  @@map("teaching_plans")
-}
-
-// Academic Management - Tests
 model Test {
-  id           String   @id @default(cuid())
-  schoolYearId String
-  staffId      String
-  subjectId    String
-  title        String
-  description  String?
+  id            String       @id @default(cuid())
+  schoolYearId  String
+  staffId       String
+  title         String
+  description   String?
   scheduledDate DateTime
-  maxScore     Decimal  @db.Decimal(5, 2)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  schoolYear SchoolYear   @relation(fields: [schoolYearId], references: [id])
-  staff      Staff        @relation(fields: [staffId], references: [id])
-  subject    Subject      @relation(fields: [subjectId], references: [id])
-  results    TestResult[]
+  maxScore      Decimal      @db.Decimal(5, 2)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  subjectId     String
+  results       TestResult[]
+  schoolYear    SchoolYear   @relation(fields: [schoolYearId], references: [id])
+  staff         Staff        @relation(fields: [staffId], references: [id])
+  subject       Subject      @relation(fields: [subjectId], references: [id])
 
   @@map("tests")
 }
@@ -279,70 +242,123 @@ model TestResult {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  test    Test    @relation(fields: [testId], references: [id], onDelete: Cascade)
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  test      Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@unique([testId, studentId])
   @@map("test_results")
 }
 
-// Attendance Management
 model Attendance {
-  id           String          @id @default(cuid())
+  id           String           @id @default(cuid())
   studentId    String
   schoolYearId String
-  date         DateTime        @db.Date
+  date         DateTime         @db.Date
   status       AttendanceStatus @default(PRESENT)
+  checkInTime  DateTime?
+  checkOutTime DateTime?
   notes        String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-
-  // Relations
-  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  schoolYear SchoolYear @relation(fields: [schoolYearId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  schoolYear   SchoolYear       @relation(fields: [schoolYearId], references: [id])
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, date])
   @@map("attendances")
 }
 
-// Membership Plan Management  
 model MembershipPlan {
-  id          String   @id @default(cuid())
-  name        String   @unique // e.g., "1 Day Plan", "3 Days Plan", "Full Week Plan"
-  description String?  // Optional description
-  daysPerWeek Int      // Number of days student can attend per week (1-7)
-  monthlyPrice Decimal @db.Decimal(10, 2) // Monthly price for this plan
-  isActive    Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  students    Student[]
+  id           String    @id @default(cuid())
+  name         String    @unique
+  description  String?
+  daysPerWeek  Int
+  monthlyPrice Decimal   @db.Decimal(10, 2)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  students     Student[]
 
   @@map("membership_plans")
 }
 
-// Messages
 model Message {
-  id        String      @id @default(cuid())
-  senderId  String?
-  recipientId String?
-  senderType MessageSenderType
+  id            String            @id @default(cuid())
+  senderId      String?
+  recipientId   String?
+  senderType    MessageSenderType
   recipientType MessageSenderType
-  subject   String
-  content   String
-  isRead    Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  // Relations
-  fromUser  User? @relation(name: "SentMessages", fields: [senderId], references: [id])
-  toUser    User? @relation(name: "ReceivedMessages", fields: [recipientId], references: [id])
+  subject       String
+  content       String
+  isRead        Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  toUser        User?             @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  fromUser      User?             @relation("SentMessages", fields: [senderId], references: [id])
 
   @@map("messages")
+}
+
+model Activity {
+  id            String            @id @default(cuid())
+  schoolYearId  String
+  staffId       String
+  title         String
+  description   String?
+  activityType  ActivityType
+  scheduledDate DateTime
+  isCompleted   Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  schoolYear    SchoolYear        @relation(fields: [schoolYearId], references: [id])
+  staff         Staff             @relation(fields: [staffId], references: [id])
+  students      StudentActivity[]
+
+  @@map("activities")
+}
+
+model StudentActivity {
+  id         String   @id @default(cuid())
+  studentId  String
+  activityId String
+  status     String   @default("ASSIGNED")
+  grade      Decimal? @db.Decimal(5, 2)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, activityId])
+  @@map("student_activities")
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String   @default("general")
+  dataType    String   @default("string")
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  STUDENT
+  PARENT
+}
+
+enum PaymentType {
+  MONTHLY_FEE
+  REGISTRATION_FEE
+  EXAM_FEE
+  MATERIAL_FEE
+  OTHER
 }
 
 enum MessageSenderType {
@@ -358,27 +374,6 @@ enum AttendanceStatus {
   EXCUSED
 }
 
-// Activities and Important Dates
-model Activity {
-  id           String        @id @default(cuid())
-  schoolYearId String
-  staffId      String
-  title        String
-  description  String?
-  activityType ActivityType
-  scheduledDate DateTime
-  isCompleted  Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  // Relations
-  schoolYear SchoolYear        @relation(fields: [schoolYearId], references: [id])
-  staff      Staff             @relation(fields: [staffId], references: [id])
-  students   StudentActivity[]
-
-  @@map("activities")
-}
-
 enum ActivityType {
   ASSIGNMENT
   PROJECT
@@ -387,38 +382,4 @@ enum ActivityType {
   MEETING
   DEADLINE
   OTHER
-}
-
-// Many-to-many relationship between students and activities
-model StudentActivity {
-  id         String   @id @default(cuid())
-  studentId  String
-  activityId String
-  status     String   @default("ASSIGNED") // "ASSIGNED", "IN_PROGRESS", "COMPLETED", "SUBMITTED"
-  grade      Decimal? @db.Decimal(5, 2)
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, activityId])
-  @@map("student_activities")
-}
-
-// System Settings - Global application configuration
-model SystemSettings {
-  id           String   @id @default(cuid())
-  key          String   @unique // e.g., "school_name", "school_address"
-  value        String   // The actual setting value
-  description  String?  // Human-readable description
-  category     String   @default("general") // e.g., "general", "academic", "notification"
-  dataType     String   @default("string") // "string", "number", "boolean", "json"
-  isPublic     Boolean  @default(false) // Whether this setting can be seen by non-admins
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("system_settings")
 }

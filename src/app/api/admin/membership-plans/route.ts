@@ -21,34 +21,36 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'STAFF'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Use raw query for now until Prisma client is updated 
-    const membershipPlans = await prisma.$queryRaw`
-      SELECT 
-        mp.*,
-        COALESCE(student_counts.count, 0) as student_count
-      FROM membership_plans mp
-      LEFT JOIN (
-        SELECT "membershipPlanId", COUNT(*) as count
-        FROM students 
-        WHERE "membershipPlanId" IS NOT NULL
-        GROUP BY "membershipPlanId"
-      ) student_counts ON mp.id = student_counts."membershipPlanId"
-      ORDER BY mp."daysPerWeek" ASC
-    ` as any[]
+    // Fetch membership plans with student count
+    const membershipPlans = await prisma.membershipPlan.findMany({
+      where: {
+        isActive: true
+      },
+      include: {
+        _count: {
+          select: {
+            students: true
+          }
+        }
+      },
+      orderBy: {
+        daysPerWeek: 'asc'
+      }
+    })
 
     return NextResponse.json({ 
-      plans: membershipPlans.map((plan: any) => ({
+      membershipPlans: membershipPlans.map((plan) => ({
         id: plan.id,
         name: plan.name,
         description: plan.description,
         daysPerWeek: plan.daysPerWeek,
         monthlyPrice: Number(plan.monthlyPrice),
         isActive: plan.isActive,
-        studentCount: Number(plan.student_count),
+        studentCount: plan._count.students,
         createdAt: plan.createdAt,
         updatedAt: plan.updatedAt
       }))
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'STAFF'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -87,14 +89,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use raw query for now until Prisma client is updated
-    const result = await prisma.$queryRaw`
-      INSERT INTO membership_plans (id, name, description, "daysPerWeek", "monthlyPrice", "isActive", "createdAt", "updatedAt")
-      VALUES (gen_random_uuid(), ${name}, ${description || null}, ${parseInt(daysPerWeek)}, ${parseFloat(monthlyPrice)}, true, NOW(), NOW())
-      RETURNING *
-    ` as any[]
-
-    const membershipPlan = result[0]
+    const membershipPlan = await prisma.membershipPlan.create({
+      data: {
+        name,
+        description,
+        daysPerWeek: parseInt(daysPerWeek),
+        monthlyPrice: parseFloat(monthlyPrice),
+        isActive: true
+      }
+    })
 
     return NextResponse.json({
       membershipPlan: {

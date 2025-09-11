@@ -1,32 +1,20 @@
 Create a list and fix the issues sequentially:
-✅ 1. Membership plans, the view and card listing is great - it's just missing a way to edit the cards for exemple by clicking on the card should open a model to edit the view/edit the plan 
-✅ 2. Finance dashboard seems to have been a regression where as it is still using an old menu and doesn't have the specific card sections and interaction we have been trough
+1. testar membership plans
+2. em baixo da seccao do mes atual devia estar uma ongoing year section com os cumulativos do ano tal como ja tinhamos discutido anteriormente.
+---
 
-## ✅ Completed Issues
+Attendance Dashboard
+Attendance stats, like assiduity per student, and days with most and less students per weekday, logged max and min per month, per school year.
+create a day attendance graph displying the days with the most expected attendance vs the real logged attendance.
+expected attendance is calculate based on the scheduled distribution of students per weekday and the real attendance is based on the loggged attendance.
 
-### Issue #1: Membership Plans Edit Functionality ✅
-- **SOLVED**: Added clickable membership plan cards with hover effects
-- **FEATURE**: Edit modal opens when clicking on any membership plan card
-- **API**: Complete CRUD functionality with PUT endpoint for updates
-- **UX**: Warning notification shows impact on enrolled students
-- **DESIGN**: Smooth hover transitions and professional styling
+---
+Finance
+When adding a payment all that should be necessary to input is the student and the month . the rest the system already knows, can you fix it?
 
-### Issue #2: Finance Dashboard Enhancement ✅  
-- **SOLVED**: Added Current Month Focus Section (September 2025 Data)
-- **FEATURE**: Interactive cards for Due Payments, Paid, and Still Due
-- **FUNCTIONALITY**: Click any card to filter the payment list below
-- **API**: Real-time monthly statistics with detailed breakdowns
-- **INTEGRATION**: Auto Payment Generator component restored
-- **UX**: Visual indicators and responsive design
+Aditionally on the list of payments, make sure the "mark paid" button works. also for overdue allow the option to mark as paid, like we have for pending payments.
+For the overdue payment card of the month, please change the color to red and use the overdue emoji like you have done on the line bellow, make sure it filters correclty on the list.
+Add a month filter to the list bellow- to filter the payments for a given month.
 
-## 🎯 Status: All Issues Resolved!
-
-Both issues from the original list have been successfully implemented with enhanced user experience and modern interactive features. The application now provides:
-
-- **Clickable UI elements** with visual feedback
-- **Real-time data filtering** through card interactions  
-- **Professional design** with consistent styling
-- **Complete API integration** for seamless functionality
-- **Responsive layouts** for all screen sizes
-
-✨ **Ready for production deployment!**
+Student list
+Hide the student code from the list item

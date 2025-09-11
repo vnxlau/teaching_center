@@ -78,7 +78,7 @@ export default function MembershipPlansPage() {
     try {
       const response = await fetch('/api/admin/membership-plans')
       const data = await response.json()
-      setPlans(data.plans || [])
+      setPlans(data.membershipPlans || [])
     } catch (error) {
       console.error('Error fetching plans:', error)
     } finally {

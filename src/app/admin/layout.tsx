@@ -151,6 +151,12 @@ export default function AdminLayout({
           icon: ClipboardDocumentListIcon,
           current: pathname === '/admin/membership-plans' 
         },
+        { 
+          name: 'Student Distribution', 
+          href: '/admin/student-distribution', 
+          icon: UserGroupIcon,
+          current: pathname === '/admin/student-distribution' 
+        },
       ]
     },
     {

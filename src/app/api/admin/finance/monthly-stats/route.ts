@@ -5,7 +5,13 @@ import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
-// GET /api/admin/finance/monthly-stats - Get current month payment statistics
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+
+// Cache for 60 seconds to improve performance
+export const revalidate = 60
+
+// GET /api/admin/finance/monthly-stats - Get current month payment statistics (OPTIMIZED)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

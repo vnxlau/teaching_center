@@ -34,7 +34,7 @@ print_error() {
 # Function to check if Docker is running
 check_docker() {
     print_status "Checking Docker..."
-    if ! sudo docker info >/dev/null 2>&1; then
+    if ! docker info >/dev/null 2>&1; then
         print_error "Docker is not running. Please start Docker first."
         exit 1
     fi
@@ -56,14 +56,14 @@ start_database() {
     print_status "Starting PostgreSQL database container..."
     
     # Start the database container
-    sudo docker compose -f docker-compose.db-only.yml up -d
+    docker compose -f docker-compose.db-only.yml up -d
     
     print_status "Waiting for database to be ready..."
     
     # Wait for the database to be healthy
     local retries=30
     while [ $retries -gt 0 ]; do
-        if sudo docker compose -f docker-compose.db-only.yml ps --format "table {{.Service}}\t{{.Status}}" | grep -q "healthy"; then
+        if docker compose -f docker-compose.db-only.yml ps --format "table {{.Service}}\t{{.Status}}" | grep -q "healthy"; then
             print_success "Database is ready!"
             break
         fi
@@ -75,7 +75,7 @@ start_database() {
     
     if [ $retries -eq 0 ]; then
         print_error "Database failed to start properly"
-        sudo docker compose -f docker-compose.db-only.yml logs postgres
+        docker compose -f docker-compose.db-only.yml logs postgres
         exit 1
     fi
 }
@@ -124,7 +124,7 @@ start_app() {
 # Function to cleanup on exit
 cleanup() {
     print_status "Stopping services..."
-    sudo docker compose -f docker-compose.db-only.yml down
+    docker compose -f docker-compose.db-only.yml down
     print_success "Cleanup complete"
 }
 

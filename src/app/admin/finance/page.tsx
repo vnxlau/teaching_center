@@ -3,9 +3,9 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
 import Modal from '@/components/Modal'
 import AutoPaymentGenerator from '@/components/admin/AutoPaymentGenerator'
+import { useNotification } from '@/components/NotificationProvider'
 
 interface Payment {
   id: string
@@ -47,6 +47,7 @@ export default function FinanceManagement() {
     dueDate: '',
     status: 'PENDING' as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   })
+  const { showNotification } = useNotification()
 
   const fetchFinancialData = useCallback(async () => {
     try {
@@ -123,7 +124,7 @@ export default function FinanceManagement() {
 
   const createPayment = async () => {
     if (!newPayment.studentId || !newPayment.amount || !newPayment.description || !newPayment.dueDate) {
-      alert('Please fill in all fields')
+      showNotification('Please fill in all fields', 'warning')
       return
     }
 
@@ -152,24 +153,19 @@ export default function FinanceManagement() {
         })
         setShowPaymentModal(false)
         fetchFinancialData()
-        alert('Payment record created successfully!')
+        showNotification('Payment record created successfully!', 'success')
       } else {
-        alert('Failed to create payment record')
+        showNotification('Failed to create payment record', 'error')
       }
     } catch (error) {
       console.error('Failed to create payment:', error)
-      alert('Failed to create payment record')
+      showNotification('Failed to create payment record', 'error')
     }
   }
 
   const openPaymentModal = () => {
     fetchStudents()
     setShowPaymentModal(true)
-  }
-
-  const handleSignOut = async () => {
-    const { signOut } = await import('next-auth/react')
-    await signOut({ callbackUrl: '/' })
   }
 
   const handleCardFilter = (filterType: string) => {
@@ -215,75 +211,29 @@ export default function FinanceManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin/dashboard" className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">TC</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Financial Management</h1>
-                  <p className="text-sm text-gray-600">Track payments, billing, and revenue</p>
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/admin/dashboard" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Dashboard
-                </Link>
-                <Link href="/admin/students" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Students
-                </Link>
-                <Link href="/admin/finance" className="text-primary-600 font-medium">
-                  Finance
-                </Link>
-                <Link href="/admin/academic" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Academic
-                </Link>
-              </nav>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                <p className="text-xs text-gray-500">{session.user.role}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Financial Management</h2>
+            <p className="text-gray-600 mt-2">Track payments, billing, and revenue</p>
+          </div>
+          <div className="flex space-x-3">
+            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+              Generate Report
+            </button>
+            <button
+              onClick={openPaymentModal}
+              className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Add Payment
+            </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900">Financial Overview</h2>
-              <p className="text-gray-600 mt-2">Monitor payments, revenue, and billing status</p>
-            </div>
-            <div className="flex space-x-3">
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                Generate Report
-              </button>
-              <button 
-                onClick={openPaymentModal}
-                className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Add Payment
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Current Month Focus Section */}
+      {/* Current Month Focus Section */}
         {currentMonthStats && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
@@ -607,7 +557,6 @@ export default function FinanceManagement() {
             </div>
           </div>
         )}
-      </main>
 
       {/* Add Payment Modal */}
       <Modal

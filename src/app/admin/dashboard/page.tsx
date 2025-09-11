@@ -19,20 +19,29 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (session) {
+    if (session && status === 'authenticated') {
       fetchStats()
+    } else if (status === 'unauthenticated') {
+      setLoading(false)
     }
-  }, [session])
+  }, [session, status])
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/dashboard-stats')
+      const response = await fetch('/api/admin/stats')
       if (response.ok) {
         const data = await response.json()
         setStats(data)
+      } else if (response.status === 401) {
+        console.error('Unauthorized access to dashboard stats')
+        setStats(null)
+      } else {
+        console.error('Failed to fetch dashboard stats:', response.status)
+        setStats(null)
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error)
+      setStats(null)
     } finally {
       setLoading(false)
     }

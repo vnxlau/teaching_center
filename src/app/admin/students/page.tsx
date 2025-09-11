@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/Modal'
@@ -39,6 +40,7 @@ interface Student {
 
 export default function StudentManagement() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -75,8 +77,7 @@ export default function StudentManagement() {
   }
 
   const handleViewStudent = (student: Student) => {
-    setSelectedStudent(student)
-    setShowViewModal(true)
+    router.push(`/admin/students/${student.id}`)
   }
 
   const handleEditStudent = (student: Student) => {
