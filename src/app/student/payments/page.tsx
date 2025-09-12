@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Payment {
   id: string
@@ -16,6 +17,7 @@ interface Payment {
 
 export default function StudentPayments() {
   const { data: session } = useSession()
+  const { t } = useLanguage()
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all')
@@ -67,15 +69,15 @@ export default function StudentPayments() {
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
       case 'MONTHLY_FEE':
-        return 'Monthly Fee'
+        return t.monthlyFee
       case 'REGISTRATION':
-        return 'Registration'
+        return t.registration
       case 'MATERIALS':
-        return 'Materials'
+        return t.materials
       case 'EXAM_FEE':
-        return 'Exam Fee'
+        return t.examFee
       default:
-        return 'Other'
+        return t.other
     }
   }
 
@@ -91,7 +93,7 @@ export default function StudentPayments() {
     return (
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading session...</p>
+        <p className="mt-4 text-gray-600">{t.loadingSession}</p>
       </div>
     )
   }
@@ -100,8 +102,8 @@ export default function StudentPayments() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-900">Payments</h2>
-        <p className="text-gray-600 mt-2">View your payment history and upcoming dues</p>
+        <h2 className="text-3xl font-bold text-gray-900">{t.studentPayments}</h2>
+        <p className="text-gray-600 mt-2">{t.viewPaymentHistory}</p>
       </div>
 
       {/* Summary Cards */}
@@ -112,7 +114,7 @@ export default function StudentPayments() {
               <span className="text-white text-xl">✅</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-green-600">Total Paid</p>
+              <p className="text-sm font-medium text-green-600">{t.totalPaid}</p>
               <p className="text-2xl font-bold text-green-900">€{totalPaid.toFixed(2)}</p>
             </div>
           </div>
@@ -124,7 +126,7 @@ export default function StudentPayments() {
               <span className="text-white text-xl">⏳</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-yellow-600">Pending</p>
+              <p className="text-sm font-medium text-yellow-600">{t.pending}</p>
               <p className="text-2xl font-bold text-yellow-900">€{totalPending.toFixed(2)}</p>
             </div>
           </div>
@@ -136,7 +138,7 @@ export default function StudentPayments() {
               <span className="text-white text-xl">📊</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-blue-600">Total Payments</p>
+              <p className="text-sm font-medium text-blue-600">{t.totalPayments}</p>
               <p className="text-2xl font-bold text-blue-900">{payments.length}</p>
             </div>
           </div>
@@ -147,10 +149,10 @@ export default function StudentPayments() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'all', name: 'All Payments', count: payments.length },
-            { id: 'pending', name: 'Pending', count: payments.filter(p => p.status === 'PENDING').length },
-            { id: 'paid', name: 'Paid', count: payments.filter(p => p.status === 'PAID').length },
-            { id: 'overdue', name: 'Overdue', count: payments.filter(p => p.status === 'OVERDUE').length },
+            { id: 'all', name: t.allPayments, count: payments.length },
+            { id: 'pending', name: t.pending, count: payments.filter(p => p.status === 'PENDING').length },
+            { id: 'paid', name: t.paid, count: payments.filter(p => p.status === 'PAID').length },
+            { id: 'overdue', name: t.overdue, count: payments.filter(p => p.status === 'OVERDUE').length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -189,16 +191,16 @@ export default function StudentPayments() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">💳</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No {activeTab === 'all' ? '' : activeTab} payments found
+            {t.noPaymentsFound}
           </h3>
           <p className="text-gray-600">
             {activeTab === 'pending' 
-              ? "You don't have any pending payments."
+              ? t.noPendingPayments
               : activeTab === 'paid'
-              ? "No payment history available."
+              ? t.noPaymentHistory
               : activeTab === 'overdue'
-              ? "You don't have any overdue payments."
-              : "No payment records found."
+              ? t.noOverduePayments
+              : t.noPaymentRecords
             }
           </p>
         </div>
@@ -218,11 +220,11 @@ export default function StudentPayments() {
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                     <span className="flex items-center gap-1">
-                      📅 Due: {new Date(payment.dueDate).toLocaleDateString()}
+                      📅 {t.due}: {new Date(payment.dueDate).toLocaleDateString()}
                     </span>
                     {payment.paidDate && (
                       <span className="flex items-center gap-1">
-                        ✅ Paid: {new Date(payment.paidDate).toLocaleDateString()}
+                        ✅ {t.paidOn}: {new Date(payment.paidDate).toLocaleDateString()}
                       </span>
                     )}
                     {payment.method && (
@@ -243,7 +245,7 @@ export default function StudentPayments() {
                   </div>
                   {payment.status === 'OVERDUE' && (
                     <div className="text-sm text-red-600 font-medium">
-                      Overdue
+                      {t.overdue}
                     </div>
                   )}
                 </div>
@@ -259,7 +261,7 @@ export default function StudentPayments() {
                       </p>
                     </div>
                     <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm">
-                      Contact Admin
+                      {t.contactAdmin}
                     </button>
                   </div>
                 </div>
@@ -271,12 +273,12 @@ export default function StudentPayments() {
 
       {/* Payment Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-blue-900 mb-2">Payment Information</h3>
+        <h3 className="text-lg font-medium text-blue-900 mb-2">{t.paymentInformation}</h3>
         <div className="text-sm text-blue-800 space-y-1">
-          <p>• Contact the school administration for payment methods and instructions</p>
-          <p>• Payments can typically be made via bank transfer, cash, or card</p>
-          <p>• Late payment fees may apply for overdue payments</p>
-          <p>• For any payment-related questions, please speak with the administrative staff</p>
+          <p>• {t.contactSchoolAdmin}</p>
+          <p>• {t.paymentMethodsInfo}</p>
+          <p>• {t.latePaymentFees}</p>
+          <p>• {t.paymentQuestions}</p>
         </div>
       </div>
     </div>

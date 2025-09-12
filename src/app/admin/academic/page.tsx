@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/Modal'
 import SubjectSelect from '@/components/SubjectSelect'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Test {
   id: string
@@ -72,6 +73,7 @@ interface Subject {
 export default function AcademicManagement() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { t } = useLanguage()
   const [tests, setTests] = useState<Test[]>([])
   const [teachingPlans, setTeachingPlans] = useState<TeachingPlan[]>([])
   const [stats, setStats] = useState<AcademicStats | null>(null)
@@ -435,7 +437,7 @@ export default function AcademicManagement() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Academic Overview</h2>
+              <h2 className="text-3xl font-bold text-gray-900">{t.academicManagement}</h2>
               <p className="text-gray-600 mt-2">Manage tests, teaching plans, and academic progress</p>
             </div>
             <div className="flex space-x-3">
@@ -444,7 +446,7 @@ export default function AcademicManagement() {
                   onClick={openTestModal}
                   className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Schedule Test
+                  {t.scheduleTest || 'Schedule Test'}
                 </button>
               )}
               {activeTab === 'plans' && (
@@ -452,7 +454,7 @@ export default function AcademicManagement() {
                   onClick={openPlanModal}
                   className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
                 >
-                  Create Teaching Plan
+                  {t.createTeachingPlan}
                 </button>
               )}
               {activeTab === 'subjects' && (
@@ -460,7 +462,7 @@ export default function AcademicManagement() {
                   onClick={() => setShowSubjectModal(true)}
                   className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Create Subject
+                  {t.createSubject || 'Create Subject'}
                 </button>
               )}
             </div>
@@ -480,7 +482,7 @@ export default function AcademicManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Tests</p>
+                  <p className="text-sm font-medium text-gray-600">{t.totalTests}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.totalTests || 0}</p>
                 </div>
               </div>
@@ -496,7 +498,7 @@ export default function AcademicManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Upcoming Tests</p>
+                  <p className="text-sm font-medium text-gray-600">{t.upcomingTests}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.upcomingTests || 0}</p>
                 </div>
               </div>
@@ -512,7 +514,7 @@ export default function AcademicManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Teaching Plans</p>
+                  <p className="text-sm font-medium text-gray-600">{t.teachingPlans}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.activeTeachingPlans || 0}</p>
                 </div>
               </div>
@@ -528,7 +530,7 @@ export default function AcademicManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Avg Score</p>
+                  <p className="text-sm font-medium text-gray-600">{t.avgScore} Score</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.averageTestScore?.toFixed(1) || '0.0'}%</p>
                 </div>
               </div>
@@ -548,7 +550,7 @@ export default function AcademicManagement() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Tests & Assessments
+                {t.testsTab}
               </button>
               <button
                 onClick={() => setActiveTab('plans')}
@@ -558,7 +560,7 @@ export default function AcademicManagement() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Teaching Plans
+                {t.teachingPlansTab}
               </button>
               <button
                 onClick={() => setActiveTab('subjects')}
@@ -588,10 +590,10 @@ export default function AcademicManagement() {
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={
                 activeTab === 'tests' 
-                  ? 'Search tests by title or subject...' 
+                  ? `${t.search} ${t.tests?.toLowerCase() || 'tests'} ${t.name?.toLowerCase() || 'by title'} ${t.subject?.toLowerCase() || 'or subject'}...` 
                   : activeTab === 'plans'
-                  ? 'Search teaching plans by student or subject...'
-                  : 'Search subjects by name or code...'
+                  ? `${t.search} ${t.teachingPlans?.toLowerCase() || 'teaching plans'} ${t.student?.toLowerCase() || 'by student'} ${t.subject?.toLowerCase() || 'or subject'}...`
+                  : `${t.search} ${t.subjects?.toLowerCase() || 'subjects'} ${t.name?.toLowerCase() || 'by name'} ${'code'}...`
               }
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
             />

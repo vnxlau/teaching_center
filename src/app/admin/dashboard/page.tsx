@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface DashboardStats {
   totalStudents: number
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const { t } = useLanguage()
 
   useEffect(() => {
     if (session && status === 'authenticated') {
@@ -51,7 +53,7 @@ export default function AdminDashboard() {
     return (
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading session...</p>
+        <p className="mt-4 text-gray-600">{t.loadingSession}</p>
       </div>
     )
   }
@@ -61,10 +63,10 @@ export default function AdminDashboard() {
         {/* Welcome Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome back, {session.user.name}! 👋
+            {t.welcomeBackAdmin}, {session.user.name}! 👋
           </h2>
           <p className="text-gray-600">
-            Here&apos;s an overview of your teaching center&apos;s current status and activities.
+            {t.adminOverviewDescription}
           </p>
         </div>
 
@@ -92,7 +94,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Students</p>
+                  <p className="text-sm font-medium text-gray-500">{t.totalStudents}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.totalStudents || 0}</p>
                 </div>
               </div>
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Active Students</p>
+                  <p className="text-sm font-medium text-gray-500">{t.activeStudents}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.activeStudents || 0}</p>
                 </div>
               </div>
@@ -124,7 +126,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Pending Payments</p>
+                  <p className="text-sm font-medium text-gray-500">{t.pendingPayments}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.pendingPayments || 0}</p>
                 </div>
               </div>
@@ -140,7 +142,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Upcoming Tests</p>
+                  <p className="text-sm font-medium text-gray-500">{t.upcomingTests}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats?.upcomingTests || 0}</p>
                 </div>
               </div>
@@ -160,8 +162,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Students</h3>
-                <p className="text-sm text-gray-500">Manage student profiles</p>
+                <h3 className="text-lg font-medium text-gray-900">{t.students}</h3>
+                <p className="text-sm text-gray-500">{t.manageStudentProfiles}</p>
               </div>
             </div>
           </Link>
@@ -176,8 +178,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Finance</h3>
-                <p className="text-sm text-gray-500">Payments and billing</p>
+                <h3 className="text-lg font-medium text-gray-900">{t.finance}</h3>
+                <p className="text-sm text-gray-500">{t.paymentsAndBilling}</p>
               </div>
             </div>
           </Link>
@@ -192,8 +194,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Academic</h3>
-                <p className="text-sm text-gray-500">Tests and progress</p>
+                <h3 className="text-lg font-medium text-gray-900">{t.academic}</h3>
+                <p className="text-sm text-gray-500">{t.testsAndProgress}</p>
               </div>
             </div>
           </Link>
@@ -208,8 +210,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Parents</h3>
-                <p className="text-sm text-gray-500">Parent communication</p>
+                <h3 className="text-lg font-medium text-gray-900">{t.parents}</h3>
+                <p className="text-sm text-gray-500">{t.parentCommunication}</p>
               </div>
             </div>
           </Link>
@@ -227,8 +229,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Messages</h3>
-                <p className="text-sm text-gray-500">Communication center</p>
+                <h3 className="text-lg font-medium text-gray-900">{t.messages}</h3>
+                <p className="text-sm text-gray-500">{t.communicationCenter}</p>
               </div>
             </div>
           </Link>
@@ -244,7 +246,7 @@ export default function AdminDashboard() {
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-medium">Quick Actions</h3>
-                <p className="text-sm text-primary-100">Send announcements and updates</p>
+                <p className="text-sm text-primary-100">{t.sendAnnouncements}</p>
               </div>
             </div>
           </div>
@@ -259,10 +261,9 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">Admin Access</h3>
+              <h3 className="text-sm font-medium text-blue-800">{t.adminAccess}</h3>
               <p className="mt-1 text-sm text-blue-700">
-                You have {session.user.role.toLowerCase()} access to the teaching center management system. 
-                All management features are available to you.
+                {t.adminAccessDescription.replace('{role}', session.user.role.toLowerCase())}
               </p>
             </div>
           </div>

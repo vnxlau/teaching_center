@@ -181,8 +181,8 @@ export async function GET(request: NextRequest) {
       amount: Number(payment.amount),
       dueDate: payment.dueDate.toISOString(),
       status: payment.dueDate < now && payment.status === 'PENDING' ? 'OVERDUE' : payment.status,
-      paidDate: payment.paidDate ? payment.paidDate.toISOString() : null,
-      notes: payment.notes,
+      paymentDate: payment.paidDate ? payment.paidDate.toISOString() : null,
+      description: payment.notes,
       method: payment.method
     }))
 
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
         status: newPayment.status,
         paymentType: newPayment.paymentType,
         method: newPayment.method,
-        paidDate: newPayment.paidDate?.toISOString() || null
+        paymentDate: newPayment.paidDate?.toISOString() || null
       }
     })
 
@@ -331,7 +331,7 @@ export async function PUT(request: NextRequest) {
       payment: {
         id: updatedPayment.id,
         status: updatedPayment.status,
-        paidDate: updatedPayment.paidDate?.toISOString() || null
+        paymentDate: updatedPayment.paidDate?.toISOString() || null
       }
     })
 

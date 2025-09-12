@@ -71,8 +71,8 @@ export default function StudentDashboard() {
   }
 
   const breadcrumbItems = [
-    { label: 'Home', href: '/' },
-    { label: 'Student Dashboard' }
+    { label: t.dashboard, href: '/' },
+    { label: t.studentDashboard }
   ]
 
   return (
@@ -107,7 +107,7 @@ export default function StudentDashboard() {
                 <div className="text-right">
                   <div className="text-3xl mb-2">🎓</div>
                   <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
-                    Active
+                    {t.active}
                   </span>
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Upcoming Tests</p>
+                    <p className="text-sm font-medium text-gray-600">{t.upcomingTests}</p>
                     <p className="text-2xl font-bold text-gray-900">{studentData.upcomingTests.length}</p>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Recent Grades</p>
+                    <p className="text-sm font-medium text-gray-600">{t.recentGrades}</p>
                     <p className="text-2xl font-bold text-gray-900">{studentData.recentGrades.length}</p>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Average Score</p>
+                    <p className="text-sm font-medium text-gray-600">{t.averageScore}</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {studentData.recentGrades.length > 0 
                         ? Math.round(studentData.recentGrades.reduce((acc, grade) => 
@@ -178,7 +178,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+                    <p className="text-sm font-medium text-gray-600">{t.pendingPayments}</p>
                     <p className="text-2xl font-bold text-gray-900">{studentData.paymentStatus.pending}</p>
                   </div>
                 </div>
@@ -190,13 +190,13 @@ export default function StudentDashboard() {
               {/* Upcoming Tests */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Upcoming Tests</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{t.upcomingTests}</h3>
                 </div>
                 <div className="p-6">
                   {studentData.upcomingTests.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="text-gray-400 text-4xl mb-2">📝</div>
-                      <p className="text-gray-600">No upcoming tests scheduled</p>
+                      <p className="text-gray-600">{t.noUpcomingTests}</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -206,7 +206,7 @@ export default function StudentDashboard() {
                             <h4 className="font-medium text-gray-900">{test.title}</h4>
                             <p className="text-sm text-gray-600">{test.subject}</p>
                             <p className="text-sm text-gray-500">
-                              {new Date(test.scheduledDate).toLocaleDateString()} at{' '}
+                              {new Date(test.scheduledDate).toLocaleDateString()} {t.at}{' '}
                               {new Date(test.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -225,13 +225,13 @@ export default function StudentDashboard() {
               {/* Recent Grades */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Recent Grades</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{t.recentGrades}</h3>
                 </div>
                 <div className="p-6">
                   {studentData.recentGrades.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="text-gray-400 text-4xl mb-2">📊</div>
-                      <p className="text-gray-600">No recent grades available</p>
+                      <p className="text-gray-600">{t.noRecentGrades}</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -269,10 +269,10 @@ export default function StudentDashboard() {
             {/* Teaching Plan */}
             {studentData.teachingPlan && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">My Learning Plan</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t.myLearningPlan}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Subjects</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">{t.subjects}</h4>
                     <div className="flex flex-wrap gap-2">
                       {studentData.teachingPlan.subjects.map((subject, index) => (
                         <span key={index} className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-primary-100 text-primary-800">
@@ -282,12 +282,12 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Schedule</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">{t.schedule}</h4>
                     <p className="text-gray-600">{studentData.teachingPlan.schedule}</p>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Learning Goals</h4>
+                  <h4 className="font-medium text-gray-900 mb-2">{t.learningGoals}</h4>
                   <p className="text-gray-600">{studentData.teachingPlan.goals}</p>
                 </div>
               </div>

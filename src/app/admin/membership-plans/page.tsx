@@ -9,6 +9,7 @@ import {
   ArrowTrendingDownIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface MembershipPlan {
   id: string
@@ -57,6 +58,7 @@ interface PlanStats {
 }
 
 export default function MembershipPlansPage() {
+  const { t } = useLanguage()
   const [plans, setPlans] = useState<MembershipPlan[]>([])
   const [stats, setStats] = useState<PlanStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -171,9 +173,9 @@ export default function MembershipPlansPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Membership Plans</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t.membershipPlans}</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Manage attendance plans and pricing for students
+            {t.manageAttendancePlans}
           </p>
         </div>
         <button
@@ -181,7 +183,7 @@ export default function MembershipPlansPage() {
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <PlusIcon className="h-4 w-4 mr-2" />
-          New Plan
+          {t.newPlan || 'New Plan'}
         </button>
       </div>
 
@@ -197,7 +199,7 @@ export default function MembershipPlansPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Plans</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">{t.totalPlansCount}</dt>
                     <dd className="text-lg font-medium text-gray-900">{stats.totalPlans}</dd>
                   </dl>
                 </div>
@@ -214,7 +216,7 @@ export default function MembershipPlansPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Students</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">{t.totalStudents}</dt>
                     <dd className="text-lg font-medium text-gray-900">{stats.totalStudents}</dd>
                   </dl>
                 </div>
@@ -231,7 +233,7 @@ export default function MembershipPlansPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">{t.totalRevenue}</dt>
                     <dd className="text-lg font-medium text-gray-900">€{stats.totalRevenue.toFixed(2)}</dd>
                   </dl>
                 </div>
@@ -248,7 +250,7 @@ export default function MembershipPlansPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">This Month</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">{t.thisMonth}</dt>
                     <dd className="text-lg font-medium text-gray-900">€{stats.currentMonthRevenue.toFixed(2)}</dd>
                   </dl>
                 </div>
@@ -271,7 +273,7 @@ export default function MembershipPlansPage() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-blue-600 truncate">Most Popular Plan</dt>
+                      <dt className="text-sm font-medium text-blue-600 truncate">{t.mostPopularPlan}</dt>
                       <dd className="text-lg font-medium text-blue-900">{stats.mostPopularPlan.name}</dd>
                       <dd className="text-sm text-blue-700">{stats.mostPopularPlan.studentCount} students</dd>
                     </dl>
@@ -291,7 +293,7 @@ export default function MembershipPlansPage() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-green-600 truncate">Highest Revenue Plan</dt>
+                      <dt className="text-sm font-medium text-green-600 truncate">{t.highestRevenuePlan}</dt>
                       <dd className="text-lg font-medium text-green-900">{stats.highestRevenuePlan.name}</dd>
                       <dd className="text-sm text-green-700">€{stats.highestRevenuePlan.totalRevenue.toFixed(2)} total</dd>
                     </dl>
@@ -345,7 +347,7 @@ export default function MembershipPlansPage() {
                 <div className="ml-4 flex-1">
                   <h3 className="text-lg font-medium text-gray-900">{plan.name}</h3>
                   <p className="text-sm text-gray-500">
-                    {plan.daysPerWeek} {plan.daysPerWeek === 1 ? 'day' : 'days'} per week
+                    {plan.daysPerWeek} {t.daysPerWeek}
                   </p>
                 </div>
               </div>

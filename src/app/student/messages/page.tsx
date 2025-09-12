@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Message {
   id: string
@@ -26,6 +27,7 @@ interface Message {
 
 export default function StudentMessagesPage() {
   const { data: session } = useSession()
+  const { t } = useLanguage()
   const [messages, setMessages] = useState<Message[]>([])
   const [staff, setStaff] = useState<{ id: string; name: string; email: string; role: string }[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +71,7 @@ export default function StudentMessagesPage() {
 
   const sendMessage = async () => {
     if (!newMessage.to || !newMessage.subject || !newMessage.content) {
-      alert('Please fill in all fields')
+      alert(t.pleaseFillAllFields)
       return
     }
 
@@ -90,13 +92,13 @@ export default function StudentMessagesPage() {
         setNewMessage({ to: '', subject: '', content: '' })
         setActiveTab('sent')
         fetchMessages()
-        alert('Message sent successfully!')
+        alert(t.messageSentSuccessfully)
       } else {
-        alert('Failed to send message')
+        alert(t.failedToSendMessage)
       }
     } catch (error) {
       console.error('Failed to send message:', error)
-      alert('Failed to send message')
+      alert(t.failedToSendMessage)
     }
   }
 
@@ -104,7 +106,7 @@ export default function StudentMessagesPage() {
     return (
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading session...</p>
+        <p className="mt-4 text-gray-600">{t.loadingSession}</p>
       </div>
     )
   }
@@ -112,12 +114,12 @@ export default function StudentMessagesPage() {
   const messageContent = (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t.messages}</h1>
         <button
           onClick={() => setActiveTab('compose')}
           className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors"
         >
-          + New Message
+          + {t.newMessage}
         </button>
       </div>
 
@@ -134,7 +136,7 @@ export default function StudentMessagesPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {tab === 'inbox' ? 'Received' : tab}
+              {tab === 'inbox' ? t.received : tab === 'sent' ? t.sent : t.compose}
             </button>
           ))}
         </nav>
@@ -143,9 +145,9 @@ export default function StudentMessagesPage() {
       {/* Tab Content */}
       {activeTab === 'inbox' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Received Messages</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t.receivedMessages}</h2>
           {messages.filter(m => m.toUser.id === session.user.id).length === 0 ? (
-            <p className="text-gray-500">No messages received yet.</p>
+            <p className="text-gray-500">{t.noMessagesReceived}</p>
           ) : (
             <div className="space-y-3">
               {messages
@@ -155,7 +157,7 @@ export default function StudentMessagesPage() {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-gray-900">{message.subject}</h3>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">From: {message.fromUser.name}</p>
+                    <p className="text-sm text-gray-600 mb-2">{t.from}: {message.fromUser.name}</p>
                     <p className="text-gray-700">{message.content}</p>
                     <p className="text-xs text-gray-500 mt-2">
                       {new Date(message.createdAt).toLocaleDateString()} at {new Date(message.createdAt).toLocaleTimeString()}
@@ -169,9 +171,9 @@ export default function StudentMessagesPage() {
 
       {activeTab === 'sent' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Sent Messages</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t.sentMessages}</h2>
           {messages.filter(m => m.fromUser.id === session.user.id).length === 0 ? (
-            <p className="text-gray-500">No messages sent yet.</p>
+            <p className="text-gray-500">{t.noMessagesSent}</p>
           ) : (
             <div className="space-y-3">
               {messages
@@ -181,7 +183,7 @@ export default function StudentMessagesPage() {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-gray-900">{message.subject}</h3>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">To: {message.toUser.name}</p>
+                    <p className="text-sm text-gray-600 mb-2">{t.to}: {message.toUser.name}</p>
                     <p className="text-gray-700">{message.content}</p>
                     <p className="text-xs text-gray-500 mt-2">
                       {new Date(message.createdAt).toLocaleDateString()} at {new Date(message.createdAt).toLocaleTimeString()}
@@ -195,17 +197,17 @@ export default function StudentMessagesPage() {
 
       {activeTab === 'compose' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Compose Message</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t.composeMessage}</h2>
           <form onSubmit={sendMessage} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.to}</label>
               <select
                 value={newMessage.to}
                 onChange={(e) => setNewMessage({ ...newMessage, to: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
               >
-                <option value="">Select recipient</option>
+                <option value="">{t.selectRecipient}</option>
                 {staff.map((member) => (
                   <option key={member.id} value={member.id}>
                     {member.name} ({member.role})
@@ -237,7 +239,7 @@ export default function StudentMessagesPage() {
               type="submit"
               className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 transition-colors"
             >
-              Send Message
+              {t.sendMessage}
             </button>
           </form>
         </div>

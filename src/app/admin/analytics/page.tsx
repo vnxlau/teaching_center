@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface AnalyticsData {
   overview: {
@@ -59,6 +60,7 @@ interface AnalyticsData {
 export default function AdminAnalytics() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { t } = useLanguage()
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'quarter'>('month')
@@ -94,9 +96,9 @@ export default function AdminAnalytics() {
   }, [session, status, router, fetchAnalyticsData])
 
   const breadcrumbItems = [
-    { label: 'Home', href: '/' },
-    { label: 'Admin', href: '/admin/dashboard' },
-    { label: 'Analytics' }
+    { label: t.homeTitle, href: '/' },
+    { label: t.admin, href: '/admin/dashboard' },
+    { label: t.analytics }
   ]
 
   if (status === 'loading' || !session) {
@@ -113,8 +115,8 @@ export default function AdminAnalytics() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h2>
-            <p className="text-gray-600 mt-2">Comprehensive insights and reporting</p>
+            <h2 className="text-3xl font-bold text-gray-900">{t.analyticsDashboard}</h2>
+            <p className="text-gray-600 mt-2">{t.comprehensiveInsights}</p>
           </div>
           <div className="flex items-center space-x-4">
             <select
@@ -122,15 +124,15 @@ export default function AdminAnalytics() {
               onChange={(e) => setTimeframe(e.target.value as 'week' | 'month' | 'quarter')}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="week">Last Week</option>
-              <option value="month">Last Month</option>
-              <option value="quarter">Last Quarter</option>
+              <option value="week">{t.lastWeek}</option>
+              <option value="month">{t.lastMonth}</option>
+              <option value="quarter">{t.lastQuarter}</option>
             </select>
             <Link
               href="/admin/dashboard"
               className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Back to Dashboard
+              {t.backToDashboard}
             </Link>
           </div>
         </div>
@@ -143,13 +145,13 @@ export default function AdminAnalytics() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <LoadingSpinner size="lg" text="Loading analytics..." />
+            <LoadingSpinner size="lg" text={t.loadingAnalytics} />
           </div>
         ) : !analyticsData ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 text-6xl mb-4">📊</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-            <p className="text-gray-600">Unable to load analytics data at this time.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t.noAnalyticsData}</h3>
+            <p className="text-gray-600">{t.unableToLoadAnalytics}</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -165,7 +167,7 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Students</p>
+                    <p className="text-sm font-medium text-gray-600">{t.totalStudents}</p>
                     <p className="text-2xl font-bold text-gray-900">{analyticsData.overview.totalStudents}</p>
                   </div>
                 </div>
@@ -181,7 +183,7 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Students</p>
+                    <p className="text-sm font-medium text-gray-600">{t.activeStudents}</p>
                     <p className="text-2xl font-bold text-gray-900">{analyticsData.overview.activeStudents}</p>
                   </div>
                 </div>
@@ -197,7 +199,7 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Staff Members</p>
+                    <p className="text-sm font-medium text-gray-600">{t.staffMembers}</p>
                     <p className="text-2xl font-bold text-gray-900">{analyticsData.overview.totalStaff}</p>
                   </div>
                 </div>
@@ -213,7 +215,7 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Parents</p>
+                    <p className="text-sm font-medium text-gray-600">{t.parents}</p>
                     <p className="text-2xl font-bold text-gray-900">{analyticsData.overview.totalParents}</p>
                   </div>
                 </div>
@@ -229,7 +231,7 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
+                    <p className="text-sm font-medium text-gray-600">{t.monthlyRevenue}</p>
                     <p className="text-2xl font-bold text-gray-900">€{analyticsData.overview.monthlyRevenue}</p>
                   </div>
                 </div>
@@ -245,7 +247,7 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+                    <p className="text-sm font-medium text-gray-600">{t.pendingPayments}</p>
                     <p className="text-2xl font-bold text-gray-900">€{analyticsData.overview.pendingPayments}</p>
                   </div>
                 </div>
@@ -256,18 +258,18 @@ export default function AdminAnalytics() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Academic Performance */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Academic Performance</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t.academicPerformance}</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Average Grade</span>
+                    <span className="text-sm font-medium text-gray-600">{t.averageGrade}</span>
                     <span className="text-xl font-bold text-gray-900">{analyticsData.performance.averageGrade}%</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Pass Rate</span>
+                    <span className="text-sm font-medium text-gray-600">{t.passRate}</span>
                     <span className="text-xl font-bold text-green-600">{analyticsData.performance.passRate}%</span>
                   </div>
                   <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Top Performers</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">{t.topPerformers}</h4>
                     <div className="space-y-2">
                       {analyticsData.performance.topPerformers.map((student, index) => (
                         <div key={student.id} className="flex items-center justify-between">
@@ -284,22 +286,22 @@ export default function AdminAnalytics() {
 
               {/* Financial Summary */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Financial Summary</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t.financialSummary}</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Total Revenue</span>
+                    <span className="text-sm font-medium text-gray-600">{t.totalRevenue}</span>
                     <span className="text-xl font-bold text-green-600">€{analyticsData.financial.totalRevenue}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Pending Amount</span>
+                    <span className="text-sm font-medium text-gray-600">{t.pendingAmount}</span>
                     <span className="text-xl font-bold text-yellow-600">€{analyticsData.financial.pendingAmount}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">Overdue Amount</span>
+                    <span className="text-sm font-medium text-gray-600">{t.overdueAmount}</span>
                     <span className="text-xl font-bold text-red-600">€{analyticsData.financial.overdueAmount}</span>
                   </div>
                   <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Methods</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">{t.paymentMethods}</h4>
                     <div className="space-y-2">
                       {analyticsData.financial.paymentMethods.map((method, index) => (
                         <div key={index} className="flex items-center justify-between">
@@ -318,13 +320,13 @@ export default function AdminAnalytics() {
             {/* Recent Activity */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t.recentActivity}</h3>
               </div>
               <div className="p-6">
                 {analyticsData.recentActivity.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-gray-400 text-4xl mb-2">📝</div>
-                    <p className="text-gray-600">No recent activity</p>
+                    <p className="text-gray-600">{t.noRecentActivity}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">

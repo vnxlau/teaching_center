@@ -383,3 +383,25 @@ enum ActivityType {
   DEADLINE
   OTHER
 }
+
+enum ExpenseType {
+  SERVICE
+  MATERIALS
+  DAILY_EMPLOYEES
+}
+
+model Expense {
+  id          String      @id @default(cuid())
+  type        ExpenseType
+  description String
+  amount      Decimal     @db.Decimal(10, 2)
+  date        DateTime    @db.Date
+  category    String?     // Optional sub-category
+  vendor      String?     // Who provided the service/materials
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdBy   String      // User ID who created the expense
+
+  @@map("expenses")
+}

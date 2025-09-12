@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/Modal'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Student {
   id: string
@@ -27,6 +28,7 @@ interface Student {
   parentName?: string
   parentEmail?: string
   paymentStatus: {
+    status: string
     current: boolean
     lastPayment?: string
     nextDue?: string
@@ -41,6 +43,7 @@ interface Student {
 export default function StudentManagement() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { t } = useLanguage()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -106,7 +109,7 @@ export default function StudentManagement() {
         // Show success notification instead of alert
         const notification = document.createElement('div')
         notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        notification.textContent = 'Student deleted successfully!'
+        notification.textContent = t.studentDeletedSuccessfully
         document.body.appendChild(notification)
         
         setTimeout(() => {
@@ -118,7 +121,7 @@ export default function StudentManagement() {
         // Show error notification instead of alert
         const notification = document.createElement('div')
         notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        notification.textContent = 'Failed to delete student'
+        notification.textContent = t.failedToDeleteStudent
         document.body.appendChild(notification)
         
         setTimeout(() => {
@@ -132,7 +135,7 @@ export default function StudentManagement() {
       // Show error notification instead of alert
       const notification = document.createElement('div')
       notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      notification.textContent = 'Failed to delete student'
+      notification.textContent = t.failedToDeleteStudent
       document.body.appendChild(notification)
       
       setTimeout(() => {
@@ -170,8 +173,8 @@ export default function StudentManagement() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Students</h2>
-              <p className="text-gray-600 mt-2">Manage student profiles, enrollment, and academic records</p>
+              <h2 className="text-3xl font-bold text-gray-900">{t.students}</h2>
+              <p className="text-gray-600 mt-2">{t.manageStudentProfiles}</p>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
@@ -180,7 +183,7 @@ export default function StudentManagement() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span>Add Student</span>
+              <span>{t.add} {t.student}</span>
             </button>
           </div>
         </div>
@@ -190,7 +193,7 @@ export default function StudentManagement() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                Search Students
+                {t.search} {t.students}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -203,14 +206,14 @@ export default function StudentManagement() {
                   id="search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by name, ID, or email..."
+                  placeholder={`${t.search} ${t.name?.toLowerCase() || 'name'}, ID, ${t.email?.toLowerCase() || 'email'}...`}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
             </div>
             <div className="md:w-48">
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
+                {t.filter} {t.status}
               </label>
               <select
                 id="status"
@@ -218,10 +221,10 @@ export default function StudentManagement() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="all">All Students</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
+                <option value="all">{t.students}</option>
+                <option value="active">{t.active}</option>
+                <option value="inactive">{t.inactive}</option>
+                <option value="suspended">{t.suspended}</option>
               </select>
             </div>
           </div>
@@ -231,12 +234,12 @@ export default function StudentManagement() {
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading students...</p>
+            <p className="text-gray-600">{t.loading} {t.students?.toLowerCase()}...</p>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 text-6xl mb-4">👨‍🎓</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t.students} {t.notFound || 'Not Found'}</h3>
             <p className="text-gray-600">
               {searchTerm || filterStatus !== 'all' 
                 ? 'Try adjusting your search or filter criteria.'
@@ -250,25 +253,25 @@ export default function StudentManagement() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
+                      {t.student}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      {t.status}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Academic
+                      {t.academic}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Membership
+                      {t.membershipPlan}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment
+                      {t.payment}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Parent
+                      {t.parent}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t.actions}
                     </th>
                   </tr>
                 </thead>
@@ -289,7 +292,7 @@ export default function StudentManagement() {
                               {student.firstName} {student.lastName}
                             </div>
                             <div className="text-sm text-gray-500">
-                              ID: {student.studentCode} • {student.email}
+                              {student.email}
                             </div>
                           </div>
                         </div>
@@ -306,10 +309,10 @@ export default function StudentManagement() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>Grade: {student.academicStatus.currentGrade}</div>
+                        <div>{t.grade}: {student.academicStatus.currentGrade}</div>
                         {student.academicStatus.averageScore && (
                           <div className="text-gray-500">
-                            Avg: {student.academicStatus.averageScore.toFixed(1)}%
+                            {t.averageScore || 'Avg'}: {student.academicStatus.averageScore.toFixed(1)}%
                           </div>
                         )}
                       </td>
@@ -318,30 +321,32 @@ export default function StudentManagement() {
                           <div>
                             <div className="font-medium">{student.membershipPlan.name}</div>
                             <div className="text-gray-500">
-                              {student.membershipPlan.daysPerWeek} days/week
+                              {student.membershipPlan.daysPerWeek} {t.daysPerWeek || 'days/week'}
                             </div>
                             {student.monthlyDueAmount && (
                               <div className="text-green-600 font-medium">
-                                €{student.monthlyDueAmount.toFixed(2)}/month
+                                €{student.monthlyDueAmount.toFixed(2)}/{t.month || 'month'}
                                 {(student.discountRate && student.discountRate > 0) && (
                                   <span className="text-orange-600 ml-1">
-                                    ({student.discountRate}% off)
+                                    ({student.discountRate}% {t.off || 'off'})
                                   </span>
                                 )}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400">No plan assigned</span>
+                          <span className="text-gray-400">{t.noPlanAssigned || 'No plan assigned'}</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          student.paymentStatus.current
+                          student.paymentStatus.status === 'paid'
                             ? 'bg-green-100 text-green-800'
+                            : student.paymentStatus.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {student.paymentStatus.current ? 'Current' : 'Overdue'}
+                          {student.paymentStatus.status.charAt(0).toUpperCase() + student.paymentStatus.status.slice(1)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -384,32 +389,6 @@ export default function StudentManagement() {
           </div>
         )}
 
-        {/* Summary Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-gray-900">{students.length}</div>
-            <div className="text-sm text-gray-600">Total Students</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-green-600">
-              {students.filter(s => s.status === 'ACTIVE').length}
-            </div>
-            <div className="text-sm text-gray-600">Active Students</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-blue-600">
-              {students.filter(s => s.paymentStatus.current).length}
-            </div>
-            <div className="text-sm text-gray-600">Payment Current</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-red-600">
-              {students.filter(s => !s.paymentStatus.current).length}
-            </div>
-            <div className="text-sm text-gray-600">Payment Overdue</div>
-          </div>
-        </div>
-
         {/* Add Student Modal */}
         {showAddModal && <AddStudentModal onClose={() => setShowAddModal(false)} onSuccess={fetchStudents} />}
 
@@ -418,7 +397,7 @@ export default function StudentManagement() {
           <Modal
             isOpen={showViewModal}
             onClose={() => setShowViewModal(false)}
-            title="Student Details"
+            title={t.studentDetails}
           >
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -535,7 +514,7 @@ export default function StudentManagement() {
           <Modal
             isOpen={showDeleteModal}
             onClose={() => setShowDeleteModal(false)}
-            title="Delete Student"
+            title={`${t.delete} ${t.student}`}
           >
             <div className="space-y-4">
               <div className="flex items-center">
@@ -565,7 +544,7 @@ export default function StudentManagement() {
                   onClick={confirmDeleteStudent}
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
                 >
-                  Delete Student
+                  {t.delete} {t.student}
                 </button>
               </div>
             </div>
@@ -730,7 +709,7 @@ function AddStudentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
         // Show error notification instead of alert
         const notification = document.createElement('div')
         notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        notification.textContent = error.error || 'Failed to create student'
+        notification.textContent = error.error || t.failedToCreateStudent
         document.body.appendChild(notification)
         
         setTimeout(() => {
@@ -744,7 +723,7 @@ function AddStudentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
       // Show error notification instead of alert
       const notification = document.createElement('div')
       notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      notification.textContent = 'Failed to create student'
+      notification.textContent = t.failedToCreateStudent
       document.body.appendChild(notification)
       
       setTimeout(() => {
@@ -1180,10 +1159,10 @@ function AddStudentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Creating Student...
+                  {t.loading}...
                 </>
               ) : (
-                'Create Student & Parents'
+                `${t.createStudent} & ${t.parents}`
               )}
             </button>
           </div>
@@ -1356,7 +1335,7 @@ function EditStudentModal({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Edit Student</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t.edit} {t.student}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"

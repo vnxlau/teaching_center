@@ -54,10 +54,10 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      // Get recent payment
-      const recentPayment = await prisma.payment.findFirst({
+      // Get all payments for this student to determine payment status
+      const allPayments = await prisma.payment.findMany({
         where: { studentId: student.id },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { dueDate: 'desc' }
       })
 
       // Get test results for average
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       return {
         ...student,
         parents: parentRelations,
-        payments: recentPayment ? [recentPayment] : [],
+        payments: allPayments, // Pass all payments instead of just recent one
         tests: testResults
       }
     }))
@@ -84,11 +84,52 @@ export async function GET(request: NextRequest) {
         ? testScores.reduce((sum: number, score: number) => sum + score, 0) / testScores.length
         : null
 
-      // Check payment status
-      const lastPayment = student.payments[0]
+      // Calculate payment status based on all payments
+      const allPayments = student.payments || []
       const now = new Date()
-      const paymentCurrent = lastPayment ? 
-        (lastPayment.status === 'PAID' && lastPayment.dueDate > now) : false
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+
+      let paymentStatusText = 'paid' // default
+
+      // Check if student has any overdue payments
+      const hasOverduePayments = allPayments.some((payment: any) =>
+        payment.status === 'OVERDUE' ||
+        (payment.dueDate < now && payment.status !== 'PAID' && payment.status !== 'CANCELLED')
+      )
+
+      if (hasOverduePayments) {
+        paymentStatusText = 'overdue'
+      } else {
+        // Check if student has pending payment for current month
+        const currentMonthPayments = allPayments.filter((payment: any) => {
+          const paymentDate = new Date(payment.dueDate)
+          return paymentDate.getMonth() === currentMonth &&
+                 paymentDate.getFullYear() === currentYear
+        })
+
+        const hasPendingCurrentMonth = currentMonthPayments.some((payment: any) =>
+          payment.status === 'PENDING'
+        )
+
+        if (hasPendingCurrentMonth) {
+          paymentStatusText = 'pending'
+        } else {
+          // Check if current month is already paid
+          const hasPaidCurrentMonth = currentMonthPayments.some((payment: any) =>
+            payment.status === 'PAID'
+          )
+
+          if (!hasPaidCurrentMonth) {
+            // If no payments exist for current month, consider it pending
+            paymentStatusText = 'pending'
+          }
+          // If hasPaidCurrentMonth is true, paymentStatusText remains 'paid'
+        }
+      }
+
+      // Get the most recent payment for display purposes
+      const recentPayment = allPayments[0]
 
       // Get parent info
       const parentRelation = student.parents[0]
@@ -118,9 +159,10 @@ export async function GET(request: NextRequest) {
         parentName: parent ? parent.user.name : null,
         parentEmail: parent ? parent.user.email : null,
         paymentStatus: {
-          current: paymentCurrent,
-          lastPayment: lastPayment ? lastPayment.createdAt.toISOString() : null,
-          nextDue: lastPayment ? lastPayment.dueDate.toISOString() : null
+          status: paymentStatusText,
+          current: paymentStatusText === 'paid',
+          lastPayment: recentPayment ? recentPayment.createdAt.toISOString() : null,
+          nextDue: recentPayment ? recentPayment.dueDate.toISOString() : null
         },
         academicStatus: {
           currentGrade: student.grade,

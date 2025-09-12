@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Parent {
   id: string
@@ -33,6 +34,7 @@ interface ParentStats {
 
 export default function ParentManagement() {
   const { data: session } = useSession()
+  const { t } = useLanguage()
   const [parents, setParents] = useState<Parent[]>([])
   const [stats, setStats] = useState<ParentStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -108,15 +110,15 @@ export default function ParentManagement() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Parent Overview</h2>
-              <p className="text-gray-600 mt-2">Manage parent accounts and family information</p>
+              <h2 className="text-3xl font-bold text-gray-900">{t.parentsManagement}</h2>
+              <p className="text-gray-600 mt-2">{t.manageParentAccounts}</p>
             </div>
             <div className="flex space-x-3">
               <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                Send Message
+                {t.sendMessageBtn}
               </button>
               <button className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
-                Add Parent
+                {t.add} {t.parent}
               </button>
             </div>
           </div>
@@ -135,7 +137,7 @@ export default function ParentManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Parents</p>
+                  <p className="text-sm font-medium text-gray-600">{t.totalParentsCount}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalParents}</p>
                 </div>
               </div>
@@ -151,7 +153,7 @@ export default function ParentManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Parents</p>
+                  <p className="text-sm font-medium text-gray-600">{t.activeParentsCount}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.activeParents}</p>
                 </div>
               </div>
@@ -167,7 +169,7 @@ export default function ParentManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Children</p>
+                  <p className="text-sm font-medium text-gray-600">{t.totalChildrenCount}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalChildren}</p>
                 </div>
               </div>
@@ -183,7 +185,7 @@ export default function ParentManagement() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Emergency Contacts</p>
+                  <p className="text-sm font-medium text-gray-600">{t.emergencyContactsCount}</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.emergencyContacts}</p>
                 </div>
               </div>
@@ -204,7 +206,7 @@ export default function ParentManagement() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search parents by name, email, or child..."
+                placeholder={`${t.search} ${t.parents?.toLowerCase() || 'parents'} ${t.name?.toLowerCase() || 'by name'}, ${t.email?.toLowerCase() || 'email'}, ${t.student?.toLowerCase() || 'or child'}...`}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -214,9 +216,9 @@ export default function ParentManagement() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="all">All Parents</option>
-                <option value="active">Active Parents</option>
-                <option value="emergency">Emergency Contacts</option>
+                <option value="all">{t.parents}</option>
+                <option value="active">{t.activeParentsOnly}</option>
+                <option value="emergency">{t.emergencyContactsOnly}</option>
               </select>
             </div>
           </div>
@@ -227,12 +229,12 @@ export default function ParentManagement() {
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading parent data...</p>
+              <p className="text-gray-600">{t.loading} {t.parent?.toLowerCase() || 'parent'} {t.data?.toLowerCase() || 'data'}...</p>
             </div>
           ) : filteredParents.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-gray-400 text-6xl mb-4">👨‍👩‍👧‍👦</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Parents Found</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t.parents} {t.notFound || 'Not Found'}</h3>
               <p className="text-gray-600">
                 {searchTerm ? 'Try adjusting your search criteria.' : 'Start by adding parent accounts to the system.'}
               </p>
@@ -241,24 +243,21 @@ export default function ParentManagement() {
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
-                  <tr>
+                                    <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Parent Information
+                      {t.parent} {t.information || 'Information'}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact Details
+                      {t.children}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Children
+                      {t.contact}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact Preference
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Contact
+                      {t.status}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t.actions}
                     </th>
                   </tr>
                 </thead>
@@ -279,7 +278,7 @@ export default function ParentManagement() {
                               {parent.name}
                               {parent.emergencyContact && (
                                 <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                  Emergency
+                                  {t.emergencyContact}
                                 </span>
                               )}
                             </div>
@@ -312,13 +311,13 @@ export default function ParentManagement() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {parent.lastContact ? new Date(parent.lastContact).toLocaleDateString() : 'Never'}
+                        {parent.lastContact ? new Date(parent.lastContact).toLocaleDateString() : t.neverContacted}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
-                          <button className="text-primary-600 hover:text-primary-900">View</button>
-                          <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                          <button className="text-green-600 hover:text-green-900">Message</button>
+                          <button className="text-primary-600 hover:text-primary-900">{t.viewStudent}</button>
+                          <button className="text-blue-600 hover:text-blue-900">{t.editStudent}</button>
+                          <button className="text-green-600 hover:text-green-900">{t.sendMessageBtn}</button>
                         </div>
                       </td>
                     </tr>

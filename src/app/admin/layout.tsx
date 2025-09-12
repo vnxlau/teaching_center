@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import OwlIcon from '@/components/icons/OwlIcon'
+import { useLanguage } from '@/contexts/LanguageContext'
 import {
   HomeIcon,
   AcademicCapIcon,
@@ -19,7 +20,9 @@ import {
   ClipboardDocumentListIcon,
   BuildingOffice2Icon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  BanknotesIcon,
+  CurrencyEuroIcon
 } from '@heroicons/react/24/outline'
 
 export default function AdminLayout({
@@ -30,9 +33,10 @@ export default function AdminLayout({
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [schoolName, setSchoolName] = useState('Teaching Center')
+  const [schoolName, setSchoolName] = useState(t.homeTitle)
 
   // Fetch school name from system settings
   useEffect(() => {
@@ -114,16 +118,16 @@ export default function AdminLayout({
 
   const navigation = [
     {
-      category: 'Overview',
+      category: t.overview,
       items: [
         { 
-          name: 'Dashboard', 
+          name: t.dashboard, 
           href: '/admin/dashboard', 
           icon: HomeIcon,
           current: pathname === '/admin/dashboard' 
         },
         { 
-          name: 'Analytics', 
+          name: t.analytics, 
           href: '/admin/analytics', 
           icon: ChartBarIcon,
           current: pathname === '/admin/analytics' 
@@ -131,28 +135,28 @@ export default function AdminLayout({
       ]
     },
     {
-      category: 'Management',
+      category: t.studentManagement,
       items: [
         { 
-          name: 'Students', 
+          name: t.students, 
           href: '/admin/students', 
           icon: AcademicCapIcon,
           current: pathname === '/admin/students' 
         },
         { 
-          name: 'Parents', 
+          name: t.parents, 
           href: '/admin/parents', 
           icon: UserGroupIcon,
           current: pathname === '/admin/parents' 
         },
         { 
-          name: 'Membership Plans', 
+          name: t.membershipPlans, 
           href: '/admin/membership-plans', 
           icon: ClipboardDocumentListIcon,
           current: pathname === '/admin/membership-plans' 
         },
         { 
-          name: 'Student Distribution', 
+          name: t.studentDistribution, 
           href: '/admin/student-distribution', 
           icon: UserGroupIcon,
           current: pathname === '/admin/student-distribution' 
@@ -160,22 +164,22 @@ export default function AdminLayout({
       ]
     },
     {
-      category: 'Operations',
+      category: t.academic,
       items: [
         { 
-          name: 'Academic', 
+          name: t.academic, 
           href: '/admin/academic', 
           icon: BuildingOffice2Icon,
           current: pathname === '/admin/academic' 
         },
         { 
-          name: 'Finance', 
-          href: '/admin/finance', 
-          icon: CreditCardIcon,
-          current: pathname === '/admin/finance' 
+          name: t.attendanceDashboard, 
+          href: '/admin/attendance-dashboard', 
+          icon: ClipboardDocumentListIcon,
+          current: pathname === '/admin/attendance-dashboard' 
         },
         { 
-          name: 'Messages', 
+          name: t.messages, 
           href: '/admin/messages', 
           icon: ChatBubbleLeftRightIcon,
           current: pathname === '/admin/messages' 
@@ -183,10 +187,33 @@ export default function AdminLayout({
       ]
     },
     {
-      category: 'System',
+      category: t.businessDashboard,
       items: [
         { 
-          name: 'Settings', 
+          name: t.businessDashboard, 
+          href: '/admin/business', 
+          icon: CreditCardIcon,
+          current: pathname === '/admin/business' 
+        },
+        { 
+          name: t.expenses, 
+          href: '/admin/business/expenses', 
+          icon: BanknotesIcon,
+          current: pathname === '/admin/business/expenses' 
+        },
+        { 
+          name: t.payments, 
+          href: '/admin/business/payments', 
+          icon: CurrencyEuroIcon,
+          current: pathname === '/admin/business/payments' 
+        },
+      ]
+    },
+    {
+      category: t.settings,
+      items: [
+        { 
+          name: t.settings, 
           href: '/admin/settings', 
           icon: CogIcon,
           current: pathname === '/admin/settings' 
@@ -314,9 +341,9 @@ export default function AdminLayout({
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {session.user.name}
                   </p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-                    {session.user.role}
-                  </p>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
+                {session.user.role}
+              </p>
                 </div>
               )}
               
@@ -333,15 +360,15 @@ export default function AdminLayout({
               className={`w-full flex items-center text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 border border-red-200 transition-all duration-200 hover:border-red-300 mt-3 group ${
                 isCollapsed ? 'justify-center px-2 py-2.5' : 'justify-center px-3 py-2.5'
               }`}
-              title={isCollapsed ? 'Sign Out' : undefined}
+              title={isCollapsed ? t.signOut : undefined}
             >
               <ArrowRightOnRectangleIcon className={`h-4 w-4 ${isCollapsed ? '' : 'mr-2'}`} />
-              {!isCollapsed && 'Sign Out'}
+              {!isCollapsed && t.signOut}
               
               {/* Tooltip for collapsed sign out */}
               {isCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                  Sign Out
+                  {t.signOut}
                 </div>
               )}
             </button>
@@ -363,7 +390,7 @@ export default function AdminLayout({
               </div>
               <div className="text-white">
                 <h1 className="text-lg font-bold">{schoolName}</h1>
-                <p className="text-blue-100 text-xs">Admin Portal</p>
+                <p className="text-blue-100 text-xs">{t.admin} Portal</p>
               </div>
             </Link>
             <button
@@ -432,7 +459,7 @@ export default function AdminLayout({
               className="w-full flex items-center justify-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 border border-red-200 transition-all duration-200 hover:border-red-300"
             >
               <ArrowRightOnRectangleIcon className="mr-2 h-4 w-4" />
-              Sign Out
+              {t.signOut}
             </button>
           </div>
         </div>
@@ -453,7 +480,7 @@ export default function AdminLayout({
               <OwlIcon className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-lg font-semibold text-gray-900">
-              {allNavItems.find(item => item.current)?.name || 'Admin Portal'}
+              {allNavItems.find(item => item.current)?.name || `${t.admin} Portal`}
             </h1>
           </div>
           <div className="w-10"></div> {/* Spacer for centering */}

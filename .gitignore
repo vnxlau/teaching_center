@@ -48,6 +48,12 @@ prisma/dev.db-journal
 coverage/
 .nyc_output/
 
+# Backups (should not be committed)
+backups/
+
+# Logs
+logs/
+
 # IDE
 .vscode/
 .idea/

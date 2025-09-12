@@ -677,6 +677,114 @@ async function main() {
   }
   console.log('✅ System settings exist')
 
+  // Create sample expenses
+  const sampleExpenses = [
+    {
+      type: 'SERVICE' as const,
+      description: 'Internet Service Provider',
+      amount: 89.99,
+      date: new Date('2024-09-01'),
+      category: 'Utilities',
+      vendor: 'ISP Company',
+      notes: 'Monthly internet bill for the center'
+    },
+    {
+      type: 'MATERIALS' as const,
+      description: 'Office Supplies',
+      amount: 156.50,
+      date: new Date('2024-09-05'),
+      category: 'Supplies',
+      vendor: 'Office Depot',
+      notes: 'Pens, paper, notebooks, and other office supplies'
+    },
+    {
+      type: 'SERVICE' as const,
+      description: 'Cleaning Service',
+      amount: 120.00,
+      date: new Date('2024-09-10'),
+      category: 'Maintenance',
+      vendor: 'CleanPro Services',
+      notes: 'Monthly cleaning service for the facility'
+    },
+    {
+      type: 'MATERIALS' as const,
+      description: 'Educational Materials',
+      amount: 234.75,
+      date: new Date('2024-09-15'),
+      category: 'Education',
+      vendor: 'EduBooks Ltd',
+      notes: 'Textbooks and educational resources'
+    },
+    {
+      type: 'DAILY_EMPLOYEES' as const,
+      description: 'Substitute Teacher Payment',
+      amount: 85.00,
+      date: new Date('2024-09-18'),
+      category: 'Staff',
+      vendor: 'John Smith',
+      notes: 'Payment for substitute teacher coverage'
+    },
+    {
+      type: 'SERVICE' as const,
+      description: 'Electricity Bill',
+      amount: 145.30,
+      date: new Date('2024-09-20'),
+      category: 'Utilities',
+      vendor: 'Electric Company',
+      notes: 'Monthly electricity bill'
+    },
+    {
+      type: 'MATERIALS' as const,
+      description: 'Computer Equipment',
+      amount: 899.99,
+      date: new Date('2024-09-25'),
+      category: 'Technology',
+      vendor: 'TechStore',
+      notes: 'New laptops for student use'
+    },
+    {
+      type: 'SERVICE' as const,
+      description: 'Software Licenses',
+      amount: 299.00,
+      date: new Date('2024-09-28'),
+      category: 'Technology',
+      vendor: 'Microsoft',
+      notes: 'Annual software license renewal'
+    },
+    {
+      type: 'DAILY_EMPLOYEES' as const,
+      description: 'Event Staff',
+      amount: 150.00,
+      date: new Date('2024-10-01'),
+      category: 'Events',
+      vendor: 'Event Helpers',
+      notes: 'Staff for parent-teacher meeting'
+    },
+    {
+      type: 'MATERIALS' as const,
+      description: 'Art Supplies',
+      amount: 78.50,
+      date: new Date('2024-10-05'),
+      category: 'Education',
+      vendor: 'Art Supply Co',
+      notes: 'Paint, brushes, and art materials'
+    }
+  ]
+
+  for (const expenseData of sampleExpenses) {
+    await prisma.expense.upsert({
+      where: {
+        id: `${expenseData.type}-${expenseData.date.toISOString().split('T')[0]}`
+      },
+      update: {},
+      create: {
+        ...expenseData,
+        createdBy: adminUser.id
+      }
+    })
+  }
+  console.log('✅ Sample expenses created')
+
   console.log('🎉 Database seeding completed successfully!')
   console.log('')
   console.log('📋 Demo Accounts Created:')
