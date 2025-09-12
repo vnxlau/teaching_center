@@ -7,7 +7,6 @@ import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import { Lock, Unlock, Shuffle, Save } from 'lucide-react';
 import { useNotification } from '@/components/NotificationProvider';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Student {
   id: string;
@@ -39,7 +38,6 @@ export default function StudentDistributionPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showNotification } = useNotification();
-  const { t } = useLanguage();
 
   useEffect(() => {
     fetchStudentDistribution();
@@ -200,7 +198,7 @@ export default function StudentDistributionPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">{t.loadingStudentDistribution}</div>
+        <div className="text-lg">Loading student distribution...</div>
       </div>
     );
   }
@@ -209,9 +207,9 @@ export default function StudentDistributionPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">{t.studentDistribution}</h1>
+          <h1 className="text-3xl font-bold">Student Distribution</h1>
           <p className="text-gray-600 mt-2">
-            {t.dragDropDescription}
+            Drag and drop students to arrange their weekly schedule
           </p>
         </div>
         <div className="flex gap-4">
@@ -221,7 +219,7 @@ export default function StudentDistributionPage() {
             variant="outline"
           >
             <Shuffle className="w-4 h-4" />
-            {t.autoAllocate}
+            Auto Allocate
           </Button>
           <Button
             onClick={saveDistribution}
@@ -229,7 +227,7 @@ export default function StudentDistributionPage() {
             className="flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            {saving ? t.saving : t.saveDistribution}
+            {saving ? 'Saving...' : 'Save Distribution'}
           </Button>
         </div>
       </div>
@@ -255,7 +253,7 @@ export default function StudentDistributionPage() {
                             {day.toLowerCase()}
                           </CardTitle>
                           <Badge variant="primary" className="w-fit mx-auto">
-                            {daySchedule[day].length} {t.studentsText}
+                            {daySchedule[day].length} students
                           </Badge>
                         </CardHeader>
                         <CardContent className="space-y-2">
@@ -282,7 +280,7 @@ export default function StudentDistributionPage() {
                                         {student.membershipPlan.name}
                                       </div>
                                       <div className="text-xs text-blue-600 mt-1">
-                                        {student.membershipPlan.daysPerWeek} {t.daysPerWeek}
+                                        {student.membershipPlan.daysPerWeek} days/week
                                       </div>
                                     </div>
                                     <div className="ml-2">
@@ -311,8 +309,8 @@ export default function StudentDistributionPage() {
           <div className="col-span-2 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{t.students}</CardTitle>
-                <p className="text-sm text-gray-600">{t.toggleLocksDescription}</p>
+                <CardTitle className="text-lg">Students</CardTitle>
+                <p className="text-sm text-gray-600">Toggle locks to prevent auto-allocation</p>
               </CardHeader>
               <CardContent className="space-y-2 max-h-96 overflow-y-auto">
                 {students.map(student => (
@@ -320,7 +318,7 @@ export default function StudentDistributionPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{student.name}</div>
                       <div className="text-xs text-gray-600">
-                        {student.membershipPlan.daysPerWeek} {t.daysPerWeek}
+                        {student.membershipPlan.daysPerWeek} days/week
                       </div>
                     </div>
                     <Button
@@ -342,10 +340,10 @@ export default function StudentDistributionPage() {
         <div className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{t.unallocatedStudents}</CardTitle>
-              <Badge variant="default">{unallocatedStudents.length} {t.studentsText}</Badge>
+              <CardTitle className="text-lg">Unallocated Students</CardTitle>
+              <Badge variant="default">{unallocatedStudents.length} students</Badge>
               <p className="text-sm text-gray-600">
-                {t.dragStudentsDescription}
+                Drag students here or from the calendar above
               </p>
             </CardHeader>
             <CardContent>
@@ -374,7 +372,7 @@ export default function StudentDistributionPage() {
                               {student.membershipPlan.name}
                             </div>
                             <div className="text-xs text-blue-600 mt-1">
-                              {student.membershipPlan.daysPerWeek} {t.daysPerWeek}
+                              {student.membershipPlan.daysPerWeek} days/week
                             </div>
                           </div>
                         )}

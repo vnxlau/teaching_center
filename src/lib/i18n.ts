@@ -568,6 +568,31 @@ export interface Translations {
   failedUpdatePayment: string
   reportCopiedClipboard: string
   redirectingBusinessDashboard: string
+
+  // Student Notes
+  studentNotes: string
+  addNote: string
+  editNote: string
+  deleteNote: string
+  noteContent: string
+  noteContentPlaceholder: string
+  selectStudents: string
+  noteStatus: string
+  warning: string
+  information: string
+  goodBehavior: string
+  noteHistory: string
+  noNotesFound: string
+  noteCreated: string
+  noteUpdated: string
+  noteDeleted: string
+  removeStudentFromNote: string
+  edited: string
+  createdBy: string
+  lastEdited: string
+  confirmDeleteNote: string
+  confirmRemoveStudent: string
+  noteLinkedToMultipleStudents: string
 }
 
 const translations: Record<Language, Translations> = {
@@ -1118,6 +1143,31 @@ const translations: Record<Language, Translations> = {
     paymentMethodsInfo: 'Payments can typically be made via bank transfer, cash, or card',
     latePaymentFees: 'Late payment fees may apply for overdue payments',
     paymentQuestions: 'For any payment-related questions, please speak with the administrative staff',
+
+    // Student Notes
+    studentNotes: 'Student Notes',
+    addNote: 'Add Note',
+    editNote: 'Edit Note',
+    deleteNote: 'Delete Note',
+    noteContent: 'Note Content',
+    noteContentPlaceholder: 'Enter the note content here...',
+    selectStudents: 'Select Students',
+    noteStatus: 'Note Status',
+    warning: 'Warning',
+    information: 'Information',
+    goodBehavior: 'Good Behavior',
+    noteHistory: 'Note History',
+    noNotesFound: 'No notes found for this student.',
+    noteCreated: 'Note created successfully!',
+    noteUpdated: 'Note updated successfully!',
+    noteDeleted: 'Note deleted successfully!',
+    removeStudentFromNote: 'Remove student from note',
+    edited: 'Edited',
+    createdBy: 'Created by',
+    lastEdited: 'Last edited',
+    confirmDeleteNote: 'Are you sure you want to delete this note? This will remove it from all associated students.',
+    confirmRemoveStudent: 'Are you sure you want to remove this student from the note?',
+    noteLinkedToMultipleStudents: 'This note is linked to multiple students.',
 
     // Student Dashboard
     studentDashboard: 'Student Dashboard',
@@ -1685,6 +1735,31 @@ const translations: Record<Language, Translations> = {
     paymentMethodsInfo: 'Os pagamentos podem normalmente ser feitos via transferência bancária, numerário ou cartão',
     latePaymentFees: 'Podem ser aplicadas taxas de atraso para pagamentos em atraso',
     paymentQuestions: 'Para qualquer questão relacionada com pagamentos, por favor fale com o pessoal administrativo',
+
+    // Student Notes
+    studentNotes: 'Notas do Aluno',
+    addNote: 'Adicionar Nota',
+    editNote: 'Editar Nota',
+    deleteNote: 'Eliminar Nota',
+    noteContent: 'Conteúdo da Nota',
+    noteContentPlaceholder: 'Introduza o conteúdo da nota aqui...',
+    selectStudents: 'Selecionar Alunos',
+    noteStatus: 'Estado da Nota',
+    warning: 'Aviso',
+    information: 'Informação',
+    goodBehavior: 'Bom Comportamento',
+    noteHistory: 'Histórico de Notas',
+    noNotesFound: 'Nenhuma nota encontrada para este aluno.',
+    noteCreated: 'Nota criada com sucesso!',
+    noteUpdated: 'Nota atualizada com sucesso!',
+    noteDeleted: 'Nota eliminada com sucesso!',
+    removeStudentFromNote: 'Remover aluno da nota',
+    edited: 'Editada',
+    createdBy: 'Criada por',
+    lastEdited: 'Última edição',
+    confirmDeleteNote: 'Tem a certeza que pretende eliminar esta nota? Esta ação irá removê-la de todos os alunos associados.',
+    confirmRemoveStudent: 'Tem a certeza que pretende remover este aluno da nota?',
+    noteLinkedToMultipleStudents: 'Esta nota está ligada a múltiplos alunos.',
 
     // Student Dashboard
     studentDashboard: 'Painel do Aluno',

@@ -176,7 +176,7 @@ export default function ParentStudentInfoPage() {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Student Information</h2>
-            <p className="text-gray-600 mt-2">View your child&apos;s information and attendance</p>
+            <p className="text-gray-600 mt-2">View your child's information and attendance</p>
           </div>
           <div className="flex space-x-3">
             <Link href="/parent/students">
