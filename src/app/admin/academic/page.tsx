@@ -8,6 +8,25 @@ import Modal from '@/components/Modal'
 import SubjectSelect from '@/components/SubjectSelect'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+interface TestResult {
+  id: string
+  testId: string
+  studentId: string
+  score: number
+  notes?: string
+  createdAt: string
+  updatedAt: string
+  student: {
+    id: string
+    firstName: string
+    lastName: string
+    studentCode: string
+    user: {
+      email: string
+    }
+  }
+}
+
 interface Test {
   id: string
   title: string
@@ -25,34 +44,13 @@ interface Test {
   status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' // Made optional
   participantCount?: number // Made optional
   averageScore?: number
-}
-
-interface TeachingPlan {
-  id: string
-  studentName?: string // Legacy field for backward compatibility
-  studentCode?: string // Legacy field for backward compatibility
-  subjects: string[] | Array<{
-    subject?: {
-      name: string
-    }
-    name?: string
-  }>
-  goals: string
-  status: 'ACTIVE' | 'COMPLETED' | 'PAUSED'
-  createdDate: string
-  progress: number
-  student?: {
-    firstName: string
-    lastName: string
-    studentCode: string
-  }
+  results?: TestResult[]
 }
 
 interface AcademicStats {
   totalTests: number
   upcomingTests: number
   completedTests: number
-  activeTeachingPlans: number
   totalSubjects: number
   averageTestScore: number
 }
@@ -75,14 +73,17 @@ export default function AcademicManagement() {
   const router = useRouter()
   const { t } = useLanguage()
   const [tests, setTests] = useState<Test[]>([])
-  const [teachingPlans, setTeachingPlans] = useState<TeachingPlan[]>([])
   const [stats, setStats] = useState<AcademicStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'tests' | 'plans' | 'subjects'>('tests')
+  const [activeTab, setActiveTab] = useState<'tests' | 'subjects'>('tests')
   const [searchTerm, setSearchTerm] = useState('')
   const [showTestModal, setShowTestModal] = useState(false)
-  const [showPlanModal, setShowPlanModal] = useState(false)
   const [showSubjectModal, setShowSubjectModal] = useState(false)
+  const [showTestResultsModal, setShowTestResultsModal] = useState(false)
+  const [selectedTestForResults, setSelectedTestForResults] = useState<Test | null>(null)
+  const [testResults, setTestResults] = useState<any[]>([])
+  const [availableStudents, setAvailableStudents] = useState<any[]>([])
+  const [assignedStudents, setAssignedStudents] = useState<any[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [students, setStudents] = useState<{ id: string, name: string, studentCode: string }[]>([])
   const [schoolYears, setSchoolYears] = useState<{ id: string, name: string }[]>([])
@@ -93,15 +94,9 @@ export default function AcademicManagement() {
   })
   const [newTest, setNewTest] = useState({
     title: '',
-    subject: '',
+    subjectId: '',
     scheduledDate: '',
-    maxScore: '',
-    schoolYearId: ''
-  })
-  const [newPlan, setNewPlan] = useState({
-    studentId: '',
-    subjects: [] as string[],
-    goals: '',
+    maxScore: '100',
     schoolYearId: ''
   })
 
@@ -128,7 +123,6 @@ export default function AcademicManagement() {
       if (response.ok) {
         const data = await response.json()
         setTests(data.tests || [])
-        setTeachingPlans(data.teachingPlans || [])
         setStats(data.stats || null)
       }
     } catch (error) {
@@ -176,7 +170,7 @@ export default function AcademicManagement() {
   }
 
   const createTest = async () => {
-    if (!newTest.title || !newTest.subject || !newTest.scheduledDate || !newTest.maxScore) {
+    if (!newTest.title || !newTest.subjectId || !newTest.scheduledDate || !newTest.maxScore) {
       alert('Please fill in all fields')
       return
     }
@@ -189,29 +183,29 @@ export default function AcademicManagement() {
         },
         body: JSON.stringify({
           type: 'test',
-          data: {
-            title: newTest.title,
-            subject: newTest.subject,
-            scheduledDate: newTest.scheduledDate,
-            maxScore: parseInt(newTest.maxScore),
-            schoolYearId: newTest.schoolYearId || schoolYears[0]?.id
-          }
+          title: newTest.title,
+          subjectId: newTest.subjectId,
+          scheduledDate: newTest.scheduledDate,
+          maxScore: parseInt(newTest.maxScore),
+          schoolYearId: newTest.schoolYearId || schoolYears[0]?.id,
+          staffId: session?.user?.staffId || session?.user?.id // Use staffId if available, fallback to user.id
         })
       })
 
       if (response.ok) {
         setNewTest({
           title: '',
-          subject: '',
+          subjectId: '',
           scheduledDate: '',
-          maxScore: '',
+          maxScore: '100',
           schoolYearId: ''
         })
         setShowTestModal(false)
         fetchAcademicData()
         alert('Test scheduled successfully!')
       } else {
-        alert('Failed to schedule test')
+        const errorData = await response.json()
+        alert(errorData.error || 'Failed to schedule test')
       }
     } catch (error) {
       console.error('Failed to create test:', error)
@@ -219,56 +213,9 @@ export default function AcademicManagement() {
     }
   }
 
-  const createTeachingPlan = async () => {
-    if (!newPlan.studentId || !newPlan.goals || newPlan.subjects.length === 0) {
-      alert('Please fill in all fields')
-      return
-    }
-
-    try {
-      const response = await fetch('/api/admin/academic', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'teaching_plan',
-          data: {
-            studentId: newPlan.studentId,
-            subjects: newPlan.subjects,
-            goals: newPlan.goals,
-            schoolYearId: newPlan.schoolYearId || schoolYears[0]?.id
-          }
-        })
-      })
-
-      if (response.ok) {
-        setNewPlan({
-          studentId: '',
-          subjects: [],
-          goals: '',
-          schoolYearId: ''
-        })
-        setShowPlanModal(false)
-        fetchAcademicData()
-        alert('Teaching plan created successfully!')
-      } else {
-        alert('Failed to create teaching plan')
-      }
-    } catch (error) {
-      console.error('Failed to create teaching plan:', error)
-      alert('Failed to create teaching plan')
-    }
-  }
-
   const openTestModal = () => {
     fetchStudentsAndYears()
     setShowTestModal(true)
-  }
-
-  const openPlanModal = () => {
-    fetchStudentsAndYears()
-    setShowPlanModal(true)
   }
 
   const createSubject = async () => {
@@ -325,6 +272,133 @@ export default function AcademicManagement() {
     } catch (error) {
       console.error('Failed to delete subject:', error)
       alert('Failed to delete subject')
+    }
+  }
+
+  const openTestResultsModal = async (test: Test) => {
+    setSelectedTestForResults(test)
+    setShowTestResultsModal(true)
+
+    try {
+      // Fetch test results
+      const resultsResponse = await fetch(`/api/admin/test-results?testId=${test.id}`)
+      if (resultsResponse.ok) {
+        const resultsData = await resultsResponse.json()
+        setTestResults(resultsData.results || [])
+      }
+
+      // Fetch available students
+      const studentsResponse = await fetch(`/api/admin/test-students?testId=${test.id}`)
+      if (studentsResponse.ok) {
+        const studentsData = await studentsResponse.json()
+        setAvailableStudents(studentsData.availableStudents || [])
+        setAssignedStudents(studentsData.assignedStudents || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch test results data:', error)
+    }
+  }
+
+  const addStudentsToTest = async (studentIds: string[]) => {
+    if (!selectedTestForResults) return
+
+    try {
+      const response = await fetch('/api/admin/test-students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testId: selectedTestForResults.id,
+          studentIds
+        })
+      })
+
+      if (response.ok) {
+        const newResults = await response.json()
+        setTestResults(prev => [...prev, ...newResults])
+        // Refresh available students
+        const studentsResponse = await fetch(`/api/admin/test-students?testId=${selectedTestForResults.id}`)
+        if (studentsResponse.ok) {
+          const studentsData = await studentsResponse.json()
+          setAvailableStudents(studentsData.availableStudents || [])
+          setAssignedStudents(studentsData.assignedStudents || [])
+        }
+        alert('Students added to test successfully!')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to add students to test')
+      }
+    } catch (error) {
+      console.error('Failed to add students to test:', error)
+      alert('Failed to add students to test')
+    }
+  }
+
+  const updateTestResult = async (studentId: string, score: number, notes: string) => {
+    if (!selectedTestForResults) return
+
+    try {
+      const response = await fetch('/api/admin/test-results', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testId: selectedTestForResults.id,
+          studentId,
+          score,
+          notes
+        })
+      })
+
+      if (response.ok) {
+        const updatedResult = await response.json()
+        setTestResults(prev =>
+          prev.map(result =>
+            result.studentId === studentId ? updatedResult : result
+          )
+        )
+        alert('Test result updated successfully!')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to update test result')
+      }
+    } catch (error) {
+      console.error('Failed to update test result:', error)
+      alert('Failed to update test result')
+    }
+  }
+
+  const removeStudentFromTest = async (studentId: string) => {
+    if (!selectedTestForResults) return
+
+    if (!confirm('Are you sure you want to remove this student from the test? This will delete their result.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/test-results?testId=${selectedTestForResults.id}&studentId=${studentId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setTestResults(prev => prev.filter(result => result.studentId !== studentId))
+        // Refresh available students
+        const studentsResponse = await fetch(`/api/admin/test-students?testId=${selectedTestForResults.id}`)
+        if (studentsResponse.ok) {
+          const studentsData = await studentsResponse.json()
+          setAvailableStudents(studentsData.availableStudents || [])
+          setAssignedStudents(studentsData.assignedStudents || [])
+        }
+        alert('Student removed from test successfully!')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to remove student from test')
+      }
+    } catch (error) {
+      console.error('Failed to remove student from test:', error)
+      alert('Failed to remove student from test')
     }
   }
 
@@ -396,18 +470,22 @@ export default function AcademicManagement() {
            subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
-  const filteredPlans = teachingPlans.filter(plan => {
-    const studentName = plan.studentName || (plan.student?.firstName + ' ' + plan.student?.lastName) || ''
-    const studentCode = plan.studentCode || plan.student?.studentCode || ''
-    const subjects = plan.subjects || []
-    
-    return studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           studentCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           subjects.some(subject => {
-             const subjectName = typeof subject === 'string' ? subject : (subject.subject?.name || subject.name || '')
-             return subjectName.toLowerCase().includes(searchTerm.toLowerCase())
-           })
-  })
+  const getTestStats = (test: Test) => {
+    const results = test.results || []
+    const participantCount = results.length
+    const scores = results
+      .map(result => result.score)
+      .filter(score => score !== null && score !== undefined && !isNaN(score))
+
+    const averageScore = scores.length > 0
+      ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+      : null
+
+    return {
+      participantCount,
+      averageScore: averageScore ? (averageScore / test.maxScore) * 100 : null
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -418,6 +496,132 @@ export default function AcademicManagement() {
       case 'PAUSED': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  // TestResultRow Component
+  const TestResultRow = ({
+    result,
+    maxScore,
+    onUpdate,
+    onRemove
+  }: {
+    result: TestResult
+    maxScore: number
+    onUpdate: (score: number, notes: string) => void
+    onRemove: () => void
+  }) => {
+    const [isEditing, setIsEditing] = useState(false)
+    const [editScore, setEditScore] = useState(result.score?.toString() || '')
+    const [editNotes, setEditNotes] = useState(result.notes || '')
+
+    const handleSave = () => {
+      const score = parseFloat(editScore)
+      if (isNaN(score) || score < 0 || score > maxScore) {
+        alert(`Score must be a number between 0 and ${maxScore}`)
+        return
+      }
+      onUpdate(score, editNotes)
+      setIsEditing(false)
+    }
+
+    const handleCancel = () => {
+      setEditScore(result.score?.toString() || '')
+      setEditNotes(result.notes || '')
+      setIsEditing(false)
+    }
+
+    const percentage = result.score && maxScore ? ((result.score / maxScore) * 100).toFixed(1) : '0.0'
+
+    return (
+      <tr className="hover:bg-gray-50">
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div>
+            <div className="text-sm font-medium text-gray-900">
+              {result.student.firstName} {result.student.lastName}
+            </div>
+            <div className="text-sm text-gray-500">
+              {result.student.studentCode} • {result.student.user.email}
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <input
+              type="number"
+              value={editScore}
+              onChange={(e) => setEditScore(e.target.value)}
+              className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+              min="0"
+              max={maxScore}
+              step="0.5"
+            />
+          ) : (
+            <span className="text-sm font-medium text-gray-900">
+              {result.score || 'Not graded'}
+            </span>
+          )}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+            parseFloat(percentage) >= 80 ? 'bg-green-100 text-green-800' :
+            parseFloat(percentage) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+            'bg-red-100 text-red-800'
+          }`}>
+            {percentage}%
+          </span>
+        </td>
+        <td className="px-6 py-4">
+          {isEditing ? (
+            <textarea
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              rows={2}
+              placeholder="Add notes about the student's performance..."
+            />
+          ) : (
+            <span className="text-sm text-gray-600">
+              {result.notes || 'No notes'}
+            </span>
+          )}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div className="flex justify-end space-x-2">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleSave}
+                  className="text-green-600 hover:text-green-900 text-sm"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="text-gray-600 hover:text-gray-900 text-sm"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-blue-600 hover:text-blue-900 text-sm"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={onRemove}
+                  className="text-red-600 hover:text-red-900 text-sm"
+                >
+                  Remove
+                </button>
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+    )
   }
 
   if (status === 'loading' || !session) {
@@ -438,7 +642,7 @@ export default function AcademicManagement() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">{t.academicManagement}</h2>
-              <p className="text-gray-600 mt-2">Manage tests, teaching plans, and academic progress</p>
+              <p className="text-gray-600 mt-2">Manage tests, subjects, and academic progress</p>
             </div>
             <div className="flex space-x-3">
               {activeTab === 'tests' && (
@@ -447,14 +651,6 @@ export default function AcademicManagement() {
                   className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   {t.scheduleTest || 'Schedule Test'}
-                </button>
-              )}
-              {activeTab === 'plans' && (
-                <button 
-                  onClick={openPlanModal}
-                  className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  {t.createTeachingPlan}
                 </button>
               )}
               {activeTab === 'subjects' && (
@@ -507,22 +703,6 @@ export default function AcademicManagement() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{t.teachingPlans}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.activeTeachingPlans || 0}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                     <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -553,16 +733,6 @@ export default function AcademicManagement() {
                 {t.testsTab}
               </button>
               <button
-                onClick={() => setActiveTab('plans')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'plans'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {t.teachingPlansTab}
-              </button>
-              <button
                 onClick={() => setActiveTab('subjects')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'subjects'
@@ -591,8 +761,6 @@ export default function AcademicManagement() {
               placeholder={
                 activeTab === 'tests' 
                   ? `${t.search} ${t.tests?.toLowerCase() || 'tests'} ${t.name?.toLowerCase() || 'by title'} ${t.subject?.toLowerCase() || 'or subject'}...` 
-                  : activeTab === 'plans'
-                  ? `${t.search} ${t.teachingPlans?.toLowerCase() || 'teaching plans'} ${t.student?.toLowerCase() || 'by student'} ${t.subject?.toLowerCase() || 'or subject'}...`
                   : `${t.search} ${t.subjects?.toLowerCase() || 'subjects'} ${t.name?.toLowerCase() || 'by name'} ${'code'}...`
               }
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
@@ -666,18 +834,19 @@ export default function AcademicManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div>
-                            <div>Participants: {test.participantCount || 0}</div>
-                            {test.averageScore && (
-                              <div className="text-gray-500">Avg: {test.averageScore.toFixed(1)}%</div>
+                            <div>Participants: {getTestStats(test).participantCount}</div>
+                            {getTestStats(test).averageScore !== null && (
+                              <div className="text-gray-500">Avg: {getTestStats(test).averageScore!.toFixed(1)}%</div>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button className="text-primary-600 hover:text-primary-900">View</button>
-                            <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                            <button className="text-green-600 hover:text-green-900">Results</button>
-                          </div>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => openTestResultsModal(test)}
+                            className="text-green-600 hover:text-green-900 px-3 py-1 rounded-md border border-green-600 hover:bg-green-50 transition-colors"
+                          >
+                            Manage Results
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -784,102 +953,7 @@ export default function AcademicManagement() {
               </div>
             )}
           </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            {filteredPlans.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="text-gray-400 text-6xl mb-4">📚</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Teaching Plans Found</h3>
-                <p className="text-gray-600">
-                  {searchTerm ? 'Try adjusting your search criteria.' : 'Create teaching plans to track student progress.'}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Subjects
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Goals
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progress
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredPlans.map((plan) => (
-                      <tr key={plan.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {plan.studentName || (plan.student ? `${plan.student.firstName} ${plan.student.lastName}` : 'Unknown Student')}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {plan.studentCode || plan.student?.studentCode || 'N/A'}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-wrap gap-1">
-                            {plan.subjects.map((subject, index) => {
-                              const subjectName = typeof subject === 'string' ? subject : (subject.subject?.name || subject.name || 'Unknown Subject')
-                              return (
-                                <span key={index} className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                                  {subjectName}
-                                </span>
-                              )
-                            })}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate" title={plan.goals}>
-                            {plan.goals}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                              <div
-                                className="bg-primary-600 h-2 rounded-full"
-                                style={{ width: `${plan.progress}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-600">{plan.progress}%</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(plan.status)}`}>
-                            {plan.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button className="text-primary-600 hover:text-primary-900">View</button>
-                            <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                            <button className="text-green-600 hover:text-green-900">Progress</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
       
       {/* Schedule Test Modal */}
       <Modal
@@ -907,8 +981,8 @@ export default function AcademicManagement() {
               Subject
             </label>
             <SubjectSelect
-              value={newTest.subject}
-              onChange={(value) => setNewTest({ ...newTest, subject: value })}
+              value={newTest.subjectId}
+              onChange={(value) => setNewTest({ ...newTest, subjectId: value })}
               placeholder="Select a subject"
               required
             />
@@ -953,77 +1027,6 @@ export default function AcademicManagement() {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Schedule Test
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Create Teaching Plan Modal */}
-      <Modal
-        isOpen={showPlanModal}
-        onClose={() => setShowPlanModal(false)}
-        title="Create Teaching Plan"
-      >
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="planStudent" className="block text-sm font-medium text-gray-700 mb-2">
-              Student
-            </label>
-            <select
-              id="planStudent"
-              value={newPlan.studentId}
-              onChange={(e) => setNewPlan({ ...newPlan, studentId: e.target.value })}
-              className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="">Select a student...</option>
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name} ({student.studentCode})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="planSubjects" className="block text-sm font-medium text-gray-700 mb-2">
-              Subjects (comma-separated)
-            </label>
-            <input
-              type="text"
-              id="planSubjects"
-              value={newPlan.subjects.join(', ')}
-              onChange={(e) => setNewPlan({ ...newPlan, subjects: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-              className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Mathematics, English, Science"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="planGoals" className="block text-sm font-medium text-gray-700 mb-2">
-              Learning Goals
-            </label>
-            <textarea
-              id="planGoals"
-              rows={4}
-              value={newPlan.goals}
-              onChange={(e) => setNewPlan({ ...newPlan, goals: e.target.value })}
-              className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Describe the learning objectives and goals for this student..."
-            />
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-4">
-            <button
-              onClick={() => setShowPlanModal(false)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={createTeachingPlan}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Create Plan
             </button>
           </div>
         </div>
@@ -1092,6 +1095,126 @@ export default function AcademicManagement() {
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               Create Subject
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Test Results Modal */}
+      <Modal
+        isOpen={showTestResultsModal}
+        onClose={() => setShowTestResultsModal(false)}
+        title={`Test Results: ${selectedTestForResults?.title || ''}`}
+      >
+        <div className="max-w-6xl w-full">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Test Results: {selectedTestForResults?.title}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Subject: {typeof selectedTestForResults?.subject === 'string'
+                  ? selectedTestForResults.subject
+                  : selectedTestForResults?.subject.name} |
+                Max Score: {selectedTestForResults?.maxScore} pts |
+                Date: {selectedTestForResults ? new Date(selectedTestForResults.scheduledDate).toLocaleDateString() : ''}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowTestResultsModal(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Add Students Section */}
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">Add Students to Test</h3>
+            <div className="flex flex-wrap gap-2">
+              {availableStudents.slice(0, 10).map((student) => (
+                <button
+                  key={student.id}
+                  onClick={() => addStudentsToTest([student.id])}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  {student.firstName} {student.lastName} ({student.studentCode})
+                </button>
+              ))}
+              {availableStudents.length > 10 && (
+                <span className="text-sm text-gray-500 self-center">
+                  +{availableStudents.length - 10} more students available
+                </span>
+              )}
+            </div>
+            {availableStudents.length === 0 && (
+              <p className="text-sm text-gray-600">All active students are already assigned to this test.</p>
+            )}
+          </div>
+
+          {/* Test Results Table */}
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Student Results ({testResults.length} participants)
+              </h3>
+            </div>
+
+            {testResults.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="text-gray-400 text-4xl mb-4">📊</div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Results Yet</h4>
+                <p className="text-gray-600">Add students to this test to start logging their scores and notes.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Student
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Score
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Percentage
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Notes
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {testResults.map((result) => (
+                      <TestResultRow
+                        key={result.id}
+                        result={result}
+                        maxScore={selectedTestForResults?.maxScore || 0}
+                        onUpdate={(score, notes) => updateTestResult(result.studentId, score, notes)}
+                        onRemove={() => removeStudentFromTest(result.studentId)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={() => setShowTestResultsModal(false)}
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Close
             </button>
           </div>
         </div>

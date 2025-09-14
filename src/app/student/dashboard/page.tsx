@@ -13,11 +13,6 @@ interface StudentData {
   firstName: string
   lastName: string
   grade: string
-  teachingPlan: {
-    subjects: string[]
-    goals: string
-    schedule: string
-  } | null
   recentGrades: Array<{
     test: {
       title: string
@@ -266,32 +261,6 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* Teaching Plan */}
-            {studentData.teachingPlan && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{t.myLearningPlan}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">{t.subjects}</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {studentData.teachingPlan.subjects.map((subject, index) => (
-                        <span key={index} className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-primary-100 text-primary-800">
-                          {subject}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">{t.schedule}</h4>
-                    <p className="text-gray-600">{studentData.teachingPlan.schedule}</p>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h4 className="font-medium text-gray-900 mb-2">{t.learningGoals}</h4>
-                  <p className="text-gray-600">{studentData.teachingPlan.goals}</p>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

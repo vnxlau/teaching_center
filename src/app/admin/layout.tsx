@@ -19,8 +19,10 @@ import {
   ClipboardDocumentListIcon,
   BuildingOffice2Icon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function AdminLayout({
   children,
@@ -30,6 +32,8 @@ export default function AdminLayout({
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useLanguage()
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [schoolName, setSchoolName] = useState('Teaching Center')
@@ -114,16 +118,16 @@ export default function AdminLayout({
 
   const navigation = [
     {
-      category: 'Overview',
+      category: t.overview,
       items: [
         { 
-          name: 'Dashboard', 
+          name: t.dashboard, 
           href: '/admin/dashboard', 
           icon: HomeIcon,
           current: pathname === '/admin/dashboard' 
         },
         { 
-          name: 'Analytics', 
+          name: t.analytics, 
           href: '/admin/analytics', 
           icon: ChartBarIcon,
           current: pathname === '/admin/analytics' 
@@ -134,48 +138,42 @@ export default function AdminLayout({
       category: 'Management',
       items: [
         { 
-          name: 'Students', 
+          name: t.students, 
           href: '/admin/students', 
           icon: AcademicCapIcon,
           current: pathname === '/admin/students' 
         },
         { 
-          name: 'Parents', 
+          name: t.parents, 
           href: '/admin/parents', 
           icon: UserGroupIcon,
           current: pathname === '/admin/parents' 
         },
         { 
-          name: 'Membership Plans', 
+          name: t.membershipPlans, 
           href: '/admin/membership-plans', 
           icon: ClipboardDocumentListIcon,
           current: pathname === '/admin/membership-plans' 
         },
         { 
-          name: 'Student Distribution', 
+          name: t.studentDistribution, 
           href: '/admin/student-distribution', 
           icon: UserGroupIcon,
           current: pathname === '/admin/student-distribution' 
         },
-      ]
-    },
-    {
-      category: 'Operations',
-      items: [
         { 
-          name: 'Academic', 
+          name: t.academic, 
           href: '/admin/academic', 
           icon: BuildingOffice2Icon,
           current: pathname === '/admin/academic' 
-        },
+        }
+      ]
+    },
+    {
+      category: 'Communications',
+      items: [
         { 
-          name: 'Finance', 
-          href: '/admin/finance', 
-          icon: CreditCardIcon,
-          current: pathname === '/admin/finance' 
-        },
-        { 
-          name: 'Messages', 
+          name: t.messages, 
           href: '/admin/messages', 
           icon: ChatBubbleLeftRightIcon,
           current: pathname === '/admin/messages' 
@@ -183,10 +181,33 @@ export default function AdminLayout({
       ]
     },
     {
+      category: t.financialManagement,
+      items: [
+        { 
+          name: t.finance, 
+          href: '/admin/finance', 
+          icon: CreditCardIcon,
+          current: pathname === '/admin/finance' 
+        },
+        { 
+          name: t.payments, 
+          href: '/admin/business/payments', 
+          icon: CreditCardIcon,
+          current: pathname === '/admin/business/payments' 
+        },
+        { 
+          name: t.expenses, 
+          href: '/admin/business/expenses', 
+          icon: BanknotesIcon,
+          current: pathname === '/admin/business/expenses' 
+        }
+      ]
+    },
+    {
       category: 'System',
       items: [
         { 
-          name: 'Settings', 
+          name: t.settings, 
           href: '/admin/settings', 
           icon: CogIcon,
           current: pathname === '/admin/settings' 

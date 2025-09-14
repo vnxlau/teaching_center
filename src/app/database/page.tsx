@@ -30,13 +30,8 @@ interface Student {
     parent: {
       firstName: string
       lastName: string
-      phone: string
     }
   }>
-  teachingPlan: {
-    subjects: string[]
-    goals: string
-  } | null
   _count: {
     payments: number
     attendances: number
@@ -197,9 +192,6 @@ export default function DatabaseDashboard() {
                     Grade
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subjects
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Parents
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -232,11 +224,6 @@ export default function DatabaseDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {student.grade}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {student.teachingPlan?.subjects.join(', ') || 'Not assigned'}
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {student.parents.map((p, idx) => (

@@ -229,12 +229,12 @@ export default function ParentManagement() {
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">{t.loading} {t.parent?.toLowerCase() || 'parent'} {t.data?.toLowerCase() || 'data'}...</p>
+              <p className="text-gray-600">{t.loading} {t.parent?.toLowerCase() || 'parent'} data...</p>
             </div>
           ) : filteredParents.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-gray-400 text-6xl mb-4">👨‍👩‍👧‍👦</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{t.parents} {t.notFound || 'Not Found'}</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t.parents} Not Found</h3>
               <p className="text-gray-600">
                 {searchTerm ? 'Try adjusting your search criteria.' : 'Start by adding parent accounts to the system.'}
               </p>
@@ -248,10 +248,10 @@ export default function ParentManagement() {
                       {t.parent} {t.information || 'Information'}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t.children}
+                      Children
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t.contact}
+                      Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t.status}

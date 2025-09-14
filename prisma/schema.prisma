@@ -23,6 +23,8 @@ model User {
   vatNumber          String?
   receivedMessages   Message[] @relation("ReceivedMessages")
   sentMessages       Message[] @relation("SentMessages")
+  expenses           Expense[]
+  notes              Note[]
   parent             Parent?
   staff              Staff?
   student            Student?
@@ -74,9 +76,9 @@ model Student {
   membershipPlan   MembershipPlan?   @relation(fields: [membershipPlanId], references: [id])
   schoolYear       SchoolYear        @relation(fields: [schoolYearId], references: [id])
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teachingPlan     TeachingPlan?
   tests            TestResult[]
   schedules        StudentSchedule[]
+  studentNotes     StudentNote[]
 
   @@map("students")
 }
@@ -154,36 +156,9 @@ model Subject {
   isActive      Boolean               @default(true)
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
-  teachingPlans TeachingPlanSubject[]
   tests         Test[]
 
   @@map("subjects")
-}
-
-model TeachingPlanSubject {
-  id             String       @id @default(cuid())
-  teachingPlanId String
-  subjectId      String
-  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  teachingPlan   TeachingPlan @relation(fields: [teachingPlanId], references: [id], onDelete: Cascade)
-
-  @@unique([teachingPlanId, subjectId])
-  @@map("teaching_plan_subjects")
-}
-
-model TeachingPlan {
-  id          String                @id @default(cuid())
-  studentId   String                @unique
-  goals       String?
-  methodology String?
-  schedule    String?
-  notes       String?
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  subjects    TeachingPlanSubject[]
-  student     Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-    @@map("teaching_plans")
 }
 
 model StudentSchedule {
@@ -382,4 +357,51 @@ enum ActivityType {
   MEETING
   DEADLINE
   OTHER
+}
+
+enum NoteStatus {
+  INFO
+  WARNING
+  POSITIVE
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  type        String
+  description String
+  amount      Float
+  date        DateTime
+  category    String?
+  vendor      String?
+  notes       String?
+  createdBy   String
+  createdByUser User    @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("expenses")
+}
+
+model Note {
+  id          String       @id @default(cuid())
+  content     String
+  status      NoteStatus   @default(INFO)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String
+  createdByUser User       @relation(fields: [createdBy], references: [id])
+  students    StudentNote[]
+
+  @@map("notes")
+}
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  noteId    String
+  studentId String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, studentId])
+  @@map("student_notes")
 }

@@ -28,10 +28,6 @@ interface ChildData {
     pending: number
     overdue: number
   }
-  teachingPlan: {
-    subjects: string[]
-    goals: string
-  } | null
 }
 
 export default function ParentDashboard() {
@@ -171,29 +167,6 @@ export default function ParentDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Teaching Plan */}
-                    {child.teachingPlan && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3">📚 Current Subjects</h4>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {child.teachingPlan.subjects.map((subject, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full"
-                            >
-                              {subject}
-                            </span>
-                          ))}
-                        </div>
-                        {child.teachingPlan.goals && (
-                          <div>
-                            <h5 className="font-medium text-gray-700 mb-2">Learning Goals</h5>
-                            <p className="text-gray-600 text-sm">{child.teachingPlan.goals}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Recent Grades */}
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">📊 Recent Test Results</h4>

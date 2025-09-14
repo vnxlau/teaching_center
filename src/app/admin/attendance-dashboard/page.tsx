@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNotification } from '@/components/NotificationProvider'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
@@ -94,19 +94,7 @@ export default function AttendanceDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('current-month')
   const [selectedSchoolYear, setSelectedSchoolYear] = useState('')
 
-  useEffect(() => {
-    if (session && status === 'authenticated') {
-      if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
-        router.push('/auth/signin')
-        return
-      }
-      fetchAttendanceStats()
-    } else if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    }
-  }, [session, status, selectedPeriod, selectedSchoolYear])
-
-  const fetchAttendanceStats = async () => {
+  const fetchAttendanceStats = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -127,7 +115,19 @@ export default function AttendanceDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedPeriod, selectedSchoolYear, showNotification])
+
+  useEffect(() => {
+    if (session && status === 'authenticated') {
+      if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
+        router.push('/auth/signin')
+        return
+      }
+      fetchAttendanceStats()
+    } else if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    }
+  }, [session, status, selectedPeriod, selectedSchoolYear, fetchAttendanceStats, router])
 
   if (status === 'loading' || loading) {
     return <LoadingSpinner />

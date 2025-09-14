@@ -30,3 +30,26 @@ in the sidebar menu you can create a new section for business and put all three 
 
 ---
 
+fix issues with lint:
+./src/app/admin/attendance-dashboard/page.tsx
+107:6  Warning: React Hook useEffect has missing dependencies: 'fetchAttendanceStats' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/admin/business/expenses/page.tsx
+100:6  Warning: React Hook useEffect has missing dependencies: 'fetchExpenses', 'fetchStats', and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/admin/business/page.tsx
+68:6  Warning: React Hook useEffect has missing dependencies: 'fetchMovements' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/parent/students/[id]/page.tsx
+76:6  Warning: React Hook useEffect has missing dependencies: 'fetchAttendanceData', 'fetchStudentData', and 'fetchStudentSchedule'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+
+---
+Parents dashboard
+the parent list doesn't work the view button does nothing- add a sub page to open Parent information, similar to what we have for the student.
+for the parents just add the details, the list of children on the right and their active membership plan and bellow add the list of payments from that parent, on the rright bellow the children list and Parent notes, to log notes on a parent. similar to what we implemented for the student.
+
+add feature on the sidebar menu to hightlight the menu we are currently on
+
+Payment received 
+when declaring a payment received for a student in a given month, if the payment doesn't exist - create it and then set it as paid

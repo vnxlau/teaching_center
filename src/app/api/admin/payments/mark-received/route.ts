@@ -54,19 +54,75 @@ export async function POST(request: NextRequest) {
           select: {
             firstName: true,
             lastName: true,
-            studentCode: true
+            studentCode: true,
+            membershipPlan: true,
+            monthlyDueAmount: true,
+            schoolYearId: true
           }
         }
       }
     })
 
+    let paymentToUpdate = payment;
+
+    // If payment doesn't exist, create it first
     if (!payment) {
-      return NextResponse.json({
-        error: 'No payment found for this student and month'
-      }, { status: 404 })
+      // Get student details including membership plan
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        include: {
+          membershipPlan: true,
+          user: true
+        }
+      })
+
+      if (!student) {
+        return NextResponse.json({ error: 'Student not found' }, { status: 404 })
+      }
+
+      if (!student.membershipPlan) {
+        return NextResponse.json({
+          error: 'Student does not have an active membership plan'
+        }, { status: 400 })
+      }
+
+      // Calculate payment amount (use student's monthlyDueAmount if set, otherwise membership plan price)
+      const amount = student.monthlyDueAmount || student.membershipPlan.monthlyPrice
+
+      // Calculate due date (8th of the selected month)
+      const dueDate = new Date(year, monthNum - 1, 8)
+
+      // Create the payment
+      paymentToUpdate = await prisma.payment.create({
+        data: {
+          studentId: studentId,
+          amount: amount,
+          dueDate: dueDate,
+          status: 'PENDING',
+          paymentType: 'MONTHLY_FEE',
+          notes: description || `Monthly fee for ${month}`,
+          schoolYearId: student.schoolYearId
+        },
+        include: {
+          student: {
+            select: {
+              firstName: true,
+              lastName: true,
+              studentCode: true,
+              membershipPlan: true,
+              monthlyDueAmount: true,
+              schoolYearId: true
+            }
+          }
+        }
+      })
     }
 
-    if (payment.status === 'PAID') {
+    if (!paymentToUpdate) {
+      return NextResponse.json({ error: 'Failed to find or create payment' }, { status: 500 })
+    }
+
+    if (paymentToUpdate.status === 'PAID') {
       return NextResponse.json({
         error: 'Payment is already marked as paid'
       }, { status: 409 })
@@ -74,22 +130,22 @@ export async function POST(request: NextRequest) {
 
     // Update the payment
     const updatedPayment = await prisma.payment.update({
-      where: { id: payment.id },
+      where: { id: paymentToUpdate.id },
       data: {
         status: 'PAID',
         paidDate: new Date(),
-        notes: description || payment.notes, // Update description if provided
+        notes: description || paymentToUpdate.notes, // Update description if provided
         method: 'CASH' // Default payment method
       }
     })
 
     return NextResponse.json({
       success: true,
-      message: `Payment for ${payment.student.firstName} ${payment.student.lastName} (${payment.student.studentCode}) marked as received`,
+      message: `Payment for ${paymentToUpdate.student.firstName} ${paymentToUpdate.student.lastName} (${paymentToUpdate.student.studentCode}) marked as received`,
       payment: {
         id: updatedPayment.id,
-        studentName: `${payment.student.firstName} ${payment.student.lastName}`,
-        studentCode: payment.student.studentCode,
+        studentName: `${paymentToUpdate.student.firstName} ${paymentToUpdate.student.lastName}`,
+        studentCode: paymentToUpdate.student.studentCode,
         amount: updatedPayment.amount,
         status: updatedPayment.status,
         paymentDate: updatedPayment.paidDate?.toISOString()

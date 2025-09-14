@@ -30,12 +30,6 @@ export async function GET() {
             }
           }
         },
-        teachingPlan: {
-          select: {
-            subjects: true,
-            goals: true
-          }
-        },
         _count: {
           select: {
             payments: true,

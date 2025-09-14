@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,19 +35,6 @@ export async function GET(request: NextRequest) {
       orderBy: { scheduledDate: 'desc' }
     });
 
-    // Get all teaching plans with subjects and students
-    const teachingPlans = await prisma.teachingPlan.findMany({
-      include: {
-        student: true,
-        subjects: {
-          include: {
-            subject: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
     // Calculate stats
     const totalTests = tests.length;
     const upcomingTests = tests.filter(test => 
@@ -55,8 +43,6 @@ export async function GET(request: NextRequest) {
     const completedTests = tests.filter(test => 
       new Date(test.scheduledDate) <= new Date() && test.isActive
     ).length;
-    const activeTeachingPlans = teachingPlans.length; // All returned plans are active
-    
     // Calculate average test score (placeholder - would need actual results)
     const averageTestScore = 85.5; // Placeholder
 
@@ -64,14 +50,12 @@ export async function GET(request: NextRequest) {
       totalTests,
       upcomingTests,
       completedTests,
-      activeTeachingPlans,
       totalSubjects: 0, // Would need to query subjects
       averageTestScore
     };
 
     return NextResponse.json({
       tests,
-      teachingPlans,
       stats
     });
   } catch (error) {
@@ -85,7 +69,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -122,42 +106,6 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json(test, { status: 201 });
-    }
-
-    if (type === 'teaching_plan') {
-      const { studentId, goals, methodology, schedule, notes, subjects } = data;
-
-      if (!studentId) {
-        return NextResponse.json(
-          { error: 'Student ID is required' },
-          { status: 400 }
-        );
-      }
-
-      const teachingPlan = await prisma.teachingPlan.create({
-        data: {
-          studentId,
-          goals: goals || '',
-          methodology: methodology || '',
-          schedule: schedule || '',
-          notes: notes || '',
-          subjects: {
-            create: (subjects || []).map((subjectId: string) => ({
-              subjectId
-            }))
-          }
-        },
-        include: {
-          student: true,
-          subjects: {
-            include: {
-              subject: true
-            }
-          }
-        }
-      });
-
-      return NextResponse.json(teachingPlan, { status: 201 });
     }
 
     return NextResponse.json(

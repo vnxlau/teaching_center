@@ -42,19 +42,6 @@ export async function GET(request: NextRequest) {
                   },
                   take: 5
                 },
-                teachingPlan: {
-                  include: {
-                    subjects: {
-                      include: {
-                        subject: {
-                          select: {
-                            name: true
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
                 payments: {
                   where: {
                     status: {

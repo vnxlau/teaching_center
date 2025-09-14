@@ -6,36 +6,57 @@ import { useEffect, useState, useCallback } from 'react'
 import Modal from '@/components/Modal'
 import AutoPaymentGenerator from '@/components/admin/AutoPaymentGenerator'
 import { useNotification } from '@/components/NotificationProvider'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import Breadcrumb from '@/components/Breadcrumb'
+import { useLanguage } from '@/contexts/LanguageContext'
+import Link from 'next/link'
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  CurrencyEuroIcon,
+  DocumentArrowDownIcon,
+  CreditCardIcon,
+  BanknotesIcon
+} from '@heroicons/react/24/outline'
 
-interface Payment {
+interface FinancialMovement {
   id: string
-  studentCode: string
-  studentName: string
+  type: 'INCOME' | 'EXPENSE'
   amount: number
-  dueDate: string
-  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
-  paymentDate?: string
+  date: string
   description: string
-  method?: string
+  category?: string
+  studentName?: string
+  studentCode?: string
+  vendor?: string
+  status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+  paymentMethod?: string
+  createdAt?: string
 }
 
 interface FinancialStats {
-  totalRevenue: number
-  monthlyRevenue: number
-  pendingAmount: number
-  overdueAmount: number
-  totalStudents: number
-  payingStudents: number
+  totalIncome: number
+  totalExpenses: number
+  netBalance: number
+  monthlyIncome: number
+  monthlyExpenses: number
+  monthlyNetBalance: number
+  pendingIncome: number
+  pendingExpenses: number
+  totalTransactions: number
 }
 
-export default function FinanceManagement() {
+export default function FinanceDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [payments, setPayments] = useState<Payment[]>([])
+  const { showNotification } = useNotification()
+  const { t } = useLanguage()
+  const [movements, setMovements] = useState<FinancialMovement[]>([])
   const [stats, setStats] = useState<FinancialStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [students, setStudents] = useState<{ id: string, name: string, studentCode: string }[]>([])
   const [currentSchoolYearId, setCurrentSchoolYearId] = useState<string | null>(null)
@@ -47,22 +68,91 @@ export default function FinanceManagement() {
     dueDate: '',
     status: 'PENDING' as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   })
-  const { showNotification } = useNotification()
+  const itemsPerPage = 20
 
   const fetchFinancialData = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/finance')
-      if (response.ok) {
-        const data = await response.json()
-        setPayments(data.payments || [])
-        setStats(data.stats || null)
+      const [paymentsResponse, expensesResponse] = await Promise.all([
+        fetch('/api/admin/payments'),
+        fetch('/api/admin/expenses')
+      ])
+
+      if (paymentsResponse.ok && expensesResponse.ok) {
+        const payments = await paymentsResponse.json()
+        const expenses = await expensesResponse.json()
+
+        // Transform payments to movements
+        const incomeMovements: FinancialMovement[] = payments.map((payment: any) => ({
+          id: `payment-${payment.id}`,
+          type: 'INCOME' as const,
+          amount: payment.amount,
+          date: payment.dueDate,
+          description: payment.description || `Payment from ${payment.studentName || 'Student'}`,
+          category: 'Student Payment',
+          studentName: payment.studentName,
+          studentCode: payment.studentCode,
+          status: payment.status,
+          paymentMethod: payment.method,
+          createdAt: payment.paidDate
+        }))
+
+        // Transform expenses to movements
+        const expenseMovements: FinancialMovement[] = expenses.map((expense: any) => ({
+          id: `expense-${expense.id}`,
+          type: 'EXPENSE' as const,
+          amount: expense.amount,
+          date: expense.date,
+          description: expense.description,
+          category: expense.category || expense.type,
+          vendor: expense.vendor,
+          createdAt: expense.createdAt
+        }))
+
+        // Combine and sort by date (newest first)
+        const allMovements = [...incomeMovements, ...expenseMovements]
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+        setMovements(allMovements)
+      } else {
+        showNotification('Failed to load financial data', 'error')
       }
     } catch (error) {
       console.error('Failed to fetch financial data:', error)
+      showNotification('Failed to load financial data', 'error')
+    }
+  }, [showNotification])
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const [paymentsStatsResponse, expensesStatsResponse] = await Promise.all([
+        fetch('/api/admin/payments/stats'),
+        fetch('/api/admin/expenses/stats')
+      ])
+
+      if (paymentsStatsResponse.ok && expensesStatsResponse.ok) {
+        const paymentsStats = await paymentsStatsResponse.json()
+        const expensesStats = await expensesStatsResponse.json()
+
+        const financialStats: FinancialStats = {
+          totalIncome: paymentsStats.totalRevenue || 0,
+          totalExpenses: expensesStats.overview?.totalExpenses || 0,
+          netBalance: (paymentsStats.totalRevenue || 0) - (expensesStats.overview?.totalExpenses || 0),
+          monthlyIncome: paymentsStats.monthlyRevenue || 0,
+          monthlyExpenses: expensesStats.overview?.monthlyExpenses || 0,
+          monthlyNetBalance: (paymentsStats.monthlyRevenue || 0) - (expensesStats.overview?.monthlyExpenses || 0),
+          pendingIncome: paymentsStats.pendingAmount || 0,
+          pendingExpenses: 0, // Expenses don't have pending status in current schema
+          totalTransactions: movements.length
+        }
+
+        setStats(financialStats)
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [movements.length])
 
   const fetchCurrentSchoolYear = async () => {
     try {
@@ -106,9 +196,10 @@ export default function FinanceManagement() {
     }
 
     fetchFinancialData()
+    fetchStats()
     fetchCurrentSchoolYear()
     fetchCurrentMonthStats()
-  }, [session, status, router, fetchFinancialData])
+  }, [session, status, router, fetchFinancialData, fetchStats])
 
   const fetchStudents = async () => {
     try {
@@ -169,7 +260,7 @@ export default function FinanceManagement() {
   }
 
   const handleCardFilter = (filterType: string) => {
-    setFilterStatus(filterType)
+    setFilterType(filterType)
     setSearchTerm('') // Clear search when using card filters
   }
 
@@ -178,16 +269,22 @@ export default function FinanceManagement() {
     return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   }
 
-  const filteredPayments = payments.filter(payment => {
-    const matchesSearch = 
-      payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.studentCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.description.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesFilter = filterStatus === 'all' || payment.status.toLowerCase() === filterStatus.toLowerCase()
-
-    return matchesSearch && matchesFilter
+  // Filter movements based on search and type
+  const filteredMovements = movements.filter(movement => {
+    const matchesSearch = movement.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         movement.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         movement.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         movement.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesType = filterType === 'all' || movement.type.toLowerCase() === filterType.toLowerCase()
+    return matchesSearch && matchesType
   })
+
+  // Pagination
+  const totalPages = Math.ceil(filteredMovements.length / itemsPerPage)
+  const paginatedMovements = filteredMovements.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -216,24 +313,31 @@ export default function FinanceManagement() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Financial Management</h2>
-            <p className="text-gray-600 mt-2">Track payments, billing, and revenue</p>
+            <h2 className="text-3xl font-bold text-gray-900">Financial Dashboard</h2>
+            <p className="text-gray-600 mt-2">Comprehensive view of all financial movements</p>
           </div>
           <div className="flex space-x-3">
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-              Generate Report
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+              <DocumentArrowDownIcon className="h-5 w-5" />
+              <span>Generate Report</span>
             </button>
-            <button
-              onClick={openPaymentModal}
-              className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Add Payment
-            </button>
+            <Link href="/admin/business/payments">
+              <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
+                <CreditCardIcon className="h-5 w-5" />
+                <span>Payments</span>
+              </button>
+            </Link>
+            <Link href="/admin/business/expenses">
+              <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+                <BanknotesIcon className="h-5 w-5" />
+                <span>Expenses</span>
+              </button>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Current Month Focus Section */}
+      {/* Financial Overview Stats */}
         {currentMonthStats && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
@@ -330,69 +434,73 @@ export default function FinanceManagement() {
           </div>
         )}
 
-        {/* Financial Stats */}
+        {/* Financial Overview Stats */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">€{stats.totalRevenue.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                � Financial Overview
+              </h3>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Net Balance */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Net Balance</p>
+                      <p className={`text-2xl font-bold ${stats.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        €{stats.netBalance.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${stats.netBalance >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                      <CurrencyEuroIcon className={`w-6 h-6 ${stats.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                    </div>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <p className="text-2xl font-bold text-gray-900">€{stats.monthlyRevenue.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                {/* Monthly Net Balance */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">This Month</p>
+                      <p className={`text-2xl font-bold ${stats.monthlyNetBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        €{stats.monthlyNetBalance.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${stats.monthlyNetBalance >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                      <BanknotesIcon className={`w-6 h-6 ${stats.monthlyNetBalance >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                    </div>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">€{stats.pendingAmount.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
+                {/* Total Income */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Income</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        €{stats.totalIncome.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <ArrowUpIcon className="w-6 h-6 text-green-600" />
+                    </div>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Overdue</p>
-                  <p className="text-2xl font-bold text-gray-900">€{stats.overdueAmount.toLocaleString()}</p>
+
+                {/* Total Expenses */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Expenses</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        €{stats.totalExpenses.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                      <ArrowDownIcon className="w-6 h-6 text-red-600" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -441,39 +549,37 @@ export default function FinanceManagement() {
               </div>
             </div>
             <div className="md:w-48">
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
+              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Type
               </label>
               <select
-                id="status"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                id="type"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="all">All Payments</option>
-                <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
-                <option value="overdue">Overdue</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="all">All Movements</option>
+                <option value="income">Income</option>
+                <option value="expense">Expenses</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Payments Table */}
+        {/* Financial Movements Table */}
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading payments...</p>
+            <p className="text-gray-600">Loading financial movements...</p>
           </div>
-        ) : filteredPayments.length === 0 ? (
+        ) : filteredMovements.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 text-6xl mb-4">💰</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Payments Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Movements Found</h3>
             <p className="text-gray-600">
-              {searchTerm || filterStatus !== 'all' 
+              {searchTerm || filterType !== 'all'
                 ? 'Try adjusting your search or filter criteria.'
-                : 'No payment records available.'}
+                : 'No financial movement records available.'}
             </p>
           </div>
         ) : (
@@ -483,7 +589,7 @@ export default function FinanceManagement() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
+                      Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
@@ -492,13 +598,13 @@ export default function FinanceManagement() {
                       Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Due Date
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment Date
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -506,44 +612,54 @@ export default function FinanceManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
+                  {paginatedMovements.map((movement) => (
+                    <tr key={movement.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{payment.studentName}</div>
-                          <div className="text-sm text-gray-500">ID: {payment.studentCode}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{payment.description}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">€{payment.amount.toLocaleString()}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(payment.dueDate).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status)}`}>
-                          {payment.status}
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          movement.type === 'INCOME' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {movement.type === 'INCOME' ? 'Income' : 'Expense'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : '-'}
+                        <div className="text-sm text-gray-900">{movement.description}</div>
+                        {movement.studentName && (
+                          <div className="text-xs text-gray-500">Student: {movement.studentName}</div>
+                        )}
+                        {movement.vendor && (
+                          <div className="text-xs text-gray-500">Vendor: {movement.vendor}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`text-sm font-medium ${
+                          movement.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {movement.type === 'INCOME' ? '+' : '-'}€{movement.amount.toLocaleString()}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {new Date(movement.date).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{movement.category}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {movement.status && (
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(movement.status)}`}>
+                            {movement.status}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button className="text-primary-600 hover:text-primary-900">
                             View
                           </button>
-                          <button className="text-blue-600 hover:text-blue-900">
-                            Edit
-                          </button>
-                          {payment.status === 'PENDING' && (
+                          {movement.type === 'INCOME' && movement.status === 'PENDING' && (
                             <button className="text-green-600 hover:text-green-900">
                               Mark Paid
                             </button>

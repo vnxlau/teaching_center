@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Card, { CardContent, CardHeader, CardTitle } from '@/components/Card'
 import Button from '@/components/Button'
@@ -67,15 +67,7 @@ export default function ParentStudentInfoPage() {
   const [schedule, setSchedule] = useState<StudentSchedule[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (session && studentId) {
-      fetchStudentData()
-      fetchAttendanceData()
-      fetchStudentSchedule()
-    }
-  }, [session, studentId])
-
-  const fetchStudentData = async () => {
+  const fetchStudentData = useCallback(async () => {
     try {
       const response = await fetch(`/api/parent/students/${studentId}`)
       if (response.ok) {
@@ -85,9 +77,9 @@ export default function ParentStudentInfoPage() {
     } catch (error) {
       console.error('Failed to fetch student:', error)
     }
-  }
+  }, [studentId])
 
-  const fetchAttendanceData = async () => {
+  const fetchAttendanceData = useCallback(async () => {
     try {
       const startDate = format(startOfWeek(new Date()), 'yyyy-MM-dd')
       const endDate = format(endOfWeek(new Date()), 'yyyy-MM-dd')
@@ -104,9 +96,9 @@ export default function ParentStudentInfoPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [studentId])
 
-  const fetchStudentSchedule = async () => {
+  const fetchStudentSchedule = useCallback(async () => {
     try {
       const response = await fetch(`/api/parent/students/${studentId}/schedule`)
       if (response.ok) {
@@ -116,7 +108,15 @@ export default function ParentStudentInfoPage() {
     } catch (error) {
       console.error('Failed to fetch schedule:', error)
     }
-  }
+  }, [studentId])
+
+  useEffect(() => {
+    if (session && studentId) {
+      fetchStudentData()
+      fetchAttendanceData()
+      fetchStudentSchedule()
+    }
+  }, [session, studentId, fetchStudentData, fetchAttendanceData, fetchStudentSchedule])
 
   const getAttendanceForDate = (date: Date) => {
     return attendance.find(record => isSameDay(parseISO(record.date), date))
@@ -176,7 +176,7 @@ export default function ParentStudentInfoPage() {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Student Information</h2>
-            <p className="text-gray-600 mt-2">View your child's information and attendance</p>
+            <p className="text-gray-600 mt-2">View your child&apos;s information and attendance</p>
           </div>
           <div className="flex space-x-3">
             <Link href="/parent/students">

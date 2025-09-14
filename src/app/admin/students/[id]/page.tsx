@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Card, { CardContent, CardHeader, CardTitle } from '@/components/Card'
 import Button from '@/components/Button'
@@ -10,6 +10,16 @@ import Badge from '@/components/Badge'
 import Modal from '@/components/Modal'
 import { useNotification } from '@/components/NotificationProvider'
 import { format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns'
+import { Bar } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
 
 interface Student {
   id: string
@@ -58,12 +68,40 @@ interface StudentSchedule {
   endTime: string
 }
 
+interface Note {
+  id: string
+  content: string
+  status: 'WARNING' | 'INFO' | 'POSITIVE'
+  createdAt: string
+  updatedAt: string
+  createdBy: {
+    id: string
+    name: string
+  }
+  students: {
+    id: string
+    firstName: string
+    lastName: string
+    studentCode: string
+  }[]
+}
+
 export default function StudentInfoPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
   const { showNotification } = useNotification()
   const studentId = params.id as string
+
+  // Register Chart.js components
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+  )
 
   const [student, setStudent] = useState<Student | null>(null)
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
@@ -78,28 +116,57 @@ export default function StudentInfoPage() {
     notes: ''
   })
 
-  useEffect(() => {
-    if (session && studentId) {
-      fetchStudentData()
-      fetchAttendanceData()
-      fetchStudentSchedule()
-    }
-  }, [session, studentId])
+  // Notes state
+  const [notes, setNotes] = useState<Note[]>([])
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false)
+  const [showEditNoteModal, setShowEditNoteModal] = useState(false)
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
+  const [noteForm, setNoteForm] = useState({
+    content: '',
+    status: 'INFO' as 'WARNING' | 'INFO' | 'POSITIVE',
+    studentIds: [] as string[]
+  })
+  const [allStudents, setAllStudents] = useState<Array<{
+    id: string
+    firstName: string
+    lastName: string
+    studentCode: string
+  }>>([])
+  const [loadingStudents, setLoadingStudents] = useState(false)
 
-  const fetchStudentData = async () => {
+  // Test scores state
+  const [testScores, setTestScores] = useState<any[]>([])
+  const [timeRange, setTimeRange] = useState<'1' | '3' | '6'>('3')
+
+  const fetchStudentData = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/students/${studentId}`)
       if (response.ok) {
         const data = await response.json()
         setStudent(data.student)
+        
+        // Extract test scores for the graph
+        if (data.student.tests) {
+          const processedTests = data.student.tests
+            .filter((testResult: any) => testResult.score !== null)
+            .map((testResult: any) => ({
+              id: testResult.test.id,
+              score: testResult.score,
+              date: testResult.test.scheduledDate,
+              subject: testResult.test.subject.name
+            }))
+            .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          
+          setTestScores(processedTests)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch student:', error)
       showNotification('Failed to load student data', 'error')
     }
-  }
+  }, [studentId, showNotification])
 
-  const fetchAttendanceData = async () => {
+  const fetchAttendanceData = useCallback(async () => {
     try {
       const startDate = format(startOfWeek(new Date()), 'yyyy-MM-dd')
       const endDate = format(endOfWeek(new Date()), 'yyyy-MM-dd')
@@ -117,9 +184,9 @@ export default function StudentInfoPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [studentId, showNotification])
 
-  const fetchStudentSchedule = async () => {
+  const fetchStudentSchedule = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/students/${studentId}/schedule`)
       if (response.ok) {
@@ -129,7 +196,46 @@ export default function StudentInfoPage() {
     } catch (error) {
       console.error('Failed to fetch schedule:', error)
     }
-  }
+  }, [studentId])
+
+  const fetchNotesData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/admin/students/${studentId}/notes`)
+      if (response.ok) {
+        const data = await response.json()
+        setNotes(data.notes)
+      }
+    } catch (error) {
+      console.error('Failed to fetch notes:', error)
+      showNotification('Failed to load notes data', 'error')
+    }
+  }, [studentId, showNotification])
+
+  const fetchAllStudents = useCallback(async () => {
+    if (allStudents.length > 0) return // Already loaded
+
+    setLoadingStudents(true)
+    try {
+      const response = await fetch('/api/admin/students')
+      if (response.ok) {
+        const data = await response.json()
+        setAllStudents(data.students || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch students:', error)
+    } finally {
+      setLoadingStudents(false)
+    }
+  }, [allStudents.length])
+
+  useEffect(() => {
+    if (session && studentId) {
+      fetchStudentData()
+      fetchAttendanceData()
+      fetchStudentSchedule()
+      fetchNotesData()
+    }
+  }, [session, studentId, fetchStudentData, fetchAttendanceData, fetchStudentSchedule, fetchNotesData])
 
   const handleAttendanceSubmit = async () => {
     if (!selectedDate) {
@@ -183,6 +289,123 @@ export default function StudentInfoPage() {
     return getScheduledDays().includes(dayName)
   }
 
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/notes/${noteId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        showNotification('Note deleted successfully', 'success')
+        fetchNotesData()
+      } else {
+        showNotification('Failed to delete note', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error)
+      showNotification('Failed to delete note', 'error')
+    }
+  }
+
+  const handleRemoveStudentFromNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to remove this student from the note?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/notes/${noteId}/students/${studentId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        showNotification('Student removed from note successfully', 'success')
+        fetchNotesData()
+      } else {
+        showNotification('Failed to remove student from note', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to remove student from note:', error)
+      showNotification('Failed to remove student from note', 'error')
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!noteForm.content.trim()) {
+      showNotification('Note content is required', 'warning')
+      return
+    }
+
+    if (noteForm.studentIds.length === 0) {
+      showNotification('At least one student must be selected', 'warning')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: noteForm.content,
+          status: noteForm.status,
+          studentIds: noteForm.studentIds
+        })
+      })
+
+      if (response.ok) {
+        showNotification('Note added successfully', 'success')
+        setShowAddNoteModal(false)
+        setNoteForm({ content: '', status: 'INFO', studentIds: [] })
+        fetchNotesData()
+      } else {
+        showNotification('Failed to add note', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to add note:', error)
+      showNotification('Failed to add note', 'error')
+    }
+  }
+
+  const handleEditNote = async () => {
+    if (!selectedNote || !noteForm.content.trim()) {
+      showNotification('Note content is required', 'warning')
+      return
+    }
+
+    if (noteForm.studentIds.length === 0) {
+      showNotification('At least one student must be selected', 'warning')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/notes/${selectedNote.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: noteForm.content,
+          status: noteForm.status,
+          studentIds: noteForm.studentIds
+        })
+      })
+
+      if (response.ok) {
+        showNotification('Note updated successfully', 'success')
+        setShowEditNoteModal(false)
+        setSelectedNote(null)
+        setNoteForm({ content: '', status: 'INFO', studentIds: [] })
+        fetchNotesData()
+      } else {
+        showNotification('Failed to update note', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to update note:', error)
+      showNotification('Failed to update note', 'error')
+    }
+  }
+
   const generateWeeklyAttendance = () => {
     const weekStart = startOfWeek(new Date())
     const weekEnd = endOfWeek(new Date())
@@ -201,6 +424,14 @@ export default function StudentInfoPage() {
           record: record || null
         }
       })
+  }
+
+  const getFilteredTestScores = () => {
+    const now = new Date()
+    const monthsBack = parseInt(timeRange)
+    const cutoffDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, now.getDate())
+    
+    return testScores.filter(test => new Date(test.date) >= cutoffDate)
   }
 
   if (loading) {
@@ -227,7 +458,7 @@ export default function StudentInfoPage() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Student Information</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{student.firstName} {student.lastName}</h2>
             <p className="text-gray-600 mt-2">View and manage student details and attendance</p>
           </div>
           <div className="flex space-x-3">
@@ -375,6 +606,123 @@ export default function StudentInfoPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Test Score Evolution Graph */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Test Score Evolution</CardTitle>
+                <div className="flex space-x-2">
+                  <Button
+                    variant={timeRange === '1' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeRange('1')}
+                  >
+                    1 Month
+                  </Button>
+                  <Button
+                    variant={timeRange === '3' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeRange('3')}
+                  >
+                    3 Months
+                  </Button>
+                  <Button
+                    variant={timeRange === '6' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeRange('6')}
+                  >
+                    6 Months
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {getFilteredTestScores().length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No test scores available for this student in the selected time range.</p>
+                </div>
+              ) : (
+                <div className="h-80">
+                  <Bar
+                    data={{
+                      labels: getFilteredTestScores().map(test => format(new Date(test.date), 'MMM dd')),
+                      datasets: [{
+                        label: 'Test Scores',
+                        data: getFilteredTestScores().map(test => test.score),
+                        backgroundColor: getFilteredTestScores().map(test => {
+                          // Color by subject
+                          const colors: { [key: string]: string } = {
+                            'Mathematics': '#3B82F6',
+                            'Portuguese': '#10B981',
+                            'English': '#F59E0B',
+                            'Science': '#EF4444',
+                            'History': '#8B5CF6',
+                            'Geography': '#06B6D4',
+                            'Arts': '#EC4899',
+                            'Physical Education': '#84CC16'
+                          }
+                          return colors[test.subject] || '#6B7280'
+                        }),
+                        borderColor: getFilteredTestScores().map(test => {
+                          const colors: { [key: string]: string } = {
+                            'Mathematics': '#2563EB',
+                            'Portuguese': '#059669',
+                            'English': '#D97706',
+                            'Science': '#DC2626',
+                            'History': '#7C3AED',
+                            'Geography': '#0891B2',
+                            'Arts': '#DB2777',
+                            'Physical Education': '#65A30D'
+                          }
+                          return colors[test.subject] || '#4B5563'
+                        }),
+                        borderWidth: 1,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false
+                        },
+                        title: {
+                          display: true,
+                          text: `Test Scores - Last ${timeRange} Month${timeRange === '1' ? '' : 's'}`
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              const filteredTests = getFilteredTestScores()
+                              const test = filteredTests[context.dataIndex]
+                              return `${test.subject}: ${context.parsed.y}/20`
+                            }
+                          }
+                        }
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          max: 20,
+                          title: {
+                            display: true,
+                            text: 'Score'
+                          }
+                        },
+                        x: {
+                          title: {
+                            display: true,
+                            text: 'Date'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Membership Plan Section */}
@@ -419,6 +767,130 @@ export default function StudentInfoPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Notes Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Student Notes</CardTitle>
+                  <p className="text-sm text-gray-600">Manage notes and observations for this student</p>
+                </div>
+                {session?.user.role === 'ADMIN' && (
+                  <Button onClick={() => {
+                    fetchAllStudents()
+                    setNoteForm({ content: '', status: 'INFO', studentIds: [studentId] })
+                    setShowAddNoteModal(true)
+                  }}>
+                    Add Note
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {notes.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No notes found for this student.</p>
+                  {session?.user.role === 'ADMIN' && (
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => {
+                        fetchAllStudents()
+                        setNoteForm({ content: '', status: 'INFO', studentIds: [studentId] })
+                        setShowAddNoteModal(true)
+                      }}
+                    >
+                      Add First Note
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {notes.map((note) => (
+                    <div key={note.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center space-x-2">
+                          <Badge
+                            variant={
+                              note.status === 'WARNING' ? 'error' :
+                              note.status === 'POSITIVE' ? 'success' : 'info'
+                            }
+                          >
+                            {note.status === 'WARNING' ? 'Warning' :
+                             note.status === 'POSITIVE' ? 'Positive' : 'Info'}
+                          </Badge>
+                          {note.updatedAt !== note.createdAt && (
+                            <span className="text-xs text-gray-500 flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                              </svg>
+                              Edited
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500">
+                            {new Date(note.updatedAt).toLocaleDateString()}
+                          </span>
+                          {session?.user.role === 'ADMIN' && (
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  fetchAllStudents()
+                                  setSelectedNote(note)
+                                  setNoteForm({
+                                    content: note.content,
+                                    status: note.status,
+                                    studentIds: note.students.map(s => s.id)
+                                  })
+                                  setShowEditNoteModal(true)
+                                }}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteNote(note.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-gray-900 mb-3">{note.content}</p>
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <div>
+                          <span>Created by: {note.createdBy.name}</span>
+                          {note.updatedAt !== note.createdAt && (
+                            <span className="ml-2">• Last edited by: {note.createdBy.name}</span>
+                          )}
+                        </div>
+                        {note.students.length > 1 && (
+                          <div className="flex items-center">
+                            <span className="mr-2">Shared with {note.students.length - 1} other student(s)</span>
+                            {session?.user.role === 'ADMIN' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveStudentFromNote(note.id)}
+                              >
+                                Remove from Note
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Schedule Section */}
           {schedule.length > 0 && (
@@ -518,6 +990,180 @@ export default function StudentInfoPage() {
               </Button>
               <Button onClick={handleAttendanceSubmit}>
                 Save Attendance
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Add Note Modal */}
+      {showAddNoteModal && (
+        <Modal
+          isOpen={showAddNoteModal}
+          onClose={() => setShowAddNoteModal(false)}
+          title="Add New Note"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Note Content</label>
+              <textarea
+                value={noteForm.content}
+                onChange={(e) => setNoteForm(prev => ({ ...prev, content: e.target.value }))}
+                rows={4}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Enter note content..."
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant={noteForm.status === 'INFO' ? 'primary' : 'outline'}
+                  onClick={() => setNoteForm(prev => ({ ...prev, status: 'INFO' }))}
+                  className="flex-1"
+                >
+                  Info
+                </Button>
+                <Button
+                  type="button"
+                  variant={noteForm.status === 'WARNING' ? 'primary' : 'outline'}
+                  onClick={() => setNoteForm(prev => ({ ...prev, status: 'WARNING' }))}
+                  className="flex-1"
+                >
+                  Warning
+                </Button>
+                <Button
+                  type="button"
+                  variant={noteForm.status === 'POSITIVE' ? 'primary' : 'outline'}
+                  onClick={() => setNoteForm(prev => ({ ...prev, status: 'POSITIVE' }))}
+                  className="flex-1"
+                >
+                  Positive
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Students</label>
+              {loadingStudents ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="text-sm text-gray-500 mt-2">Loading students...</p>
+                </div>
+              ) : (
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 space-y-2">
+                  {allStudents.map((student) => (
+                    <label key={student.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={noteForm.studentIds.includes(student.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNoteForm(prev => ({
+                              ...prev,
+                              studentIds: [...prev.studentIds, student.id]
+                            }))
+                          } else {
+                            setNoteForm(prev => ({
+                              ...prev,
+                              studentIds: prev.studentIds.filter(id => id !== student.id)
+                            }))
+                          }
+                        }}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          {student.firstName} {student.lastName}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          ({student.studentCode})
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {noteForm.studentIds.length > 0 && (
+                <p className="text-xs text-gray-600 mt-2">
+                  {noteForm.studentIds.length} student{noteForm.studentIds.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddNoteModal(false)
+                  setNoteForm({ content: '', status: 'INFO', studentIds: [] })
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddNote}
+                disabled={noteForm.studentIds.length === 0}
+              >
+                Add Note
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit Note Modal */}
+      {showEditNoteModal && selectedNote && (
+        <Modal
+          isOpen={showEditNoteModal}
+          onClose={() => setShowEditNoteModal(false)}
+          title="Edit Note"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Note Content</label>
+              <textarea
+                value={noteForm.content}
+                onChange={(e) => setNoteForm(prev => ({ ...prev, content: e.target.value }))}
+                rows={4}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Enter note content..."
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                value={noteForm.status}
+                onChange={(e) => setNoteForm(prev => ({
+                  ...prev,
+                  status: e.target.value as 'WARNING' | 'INFO' | 'POSITIVE'
+                }))}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="INFO">Info</option>
+                <option value="WARNING">Warning</option>
+                <option value="POSITIVE">Positive</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditNoteModal(false)
+                  setSelectedNote(null)
+                  setNoteForm({ content: '', status: 'INFO', studentIds: [] })
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditNote}>
+                Update Note
               </Button>
             </div>
           </div>

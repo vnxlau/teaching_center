@@ -34,10 +34,12 @@ export default function SubjectSelect({
       const response = await fetch('/api/admin/subjects')
       if (response.ok) {
         const data = await response.json()
-        setSubjects(data || [])
+        // Extract subjects array from the API response
+        setSubjects(data.subjects || [])
       }
     } catch (error) {
       console.error('Failed to fetch subjects:', error)
+      setSubjects([]) // Ensure subjects is always an array
     } finally {
       setLoading(false)
     }
@@ -62,8 +64,8 @@ export default function SubjectSelect({
       required={required}
     >
       <option value="">{placeholder}</option>
-      {subjects.map((subject) => (
-        <option key={subject.id} value={subject.name}>
+      {Array.isArray(subjects) && subjects.map((subject) => (
+        <option key={subject.id} value={subject.id}>
           {subject.name} ({subject.code})
         </option>
       ))}

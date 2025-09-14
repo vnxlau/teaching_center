@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNotification } from '@/components/NotificationProvider'
 import { useLanguage } from '@/contexts/LanguageContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -54,20 +54,7 @@ export default function BusinessDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
-  useEffect(() => {
-    if (session && status === 'authenticated') {
-      if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
-        router.push('/auth/signin')
-        return
-      }
-      fetchMovements()
-      fetchStats()
-    } else if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    }
-  }, [session, status])
-
-  const fetchMovements = async () => {
+  const fetchMovements = useCallback(async () => {
     try {
       const [paymentsResponse, expensesResponse] = await Promise.all([
         fetch('/api/admin/payments'),
@@ -114,7 +101,7 @@ export default function BusinessDashboard() {
       console.error('Failed to fetch movements:', error)
       showNotification('Failed to load financial data', 'error')
     }
-  }
+  }, [showNotification])
 
   const fetchStats = async () => {
     try {
@@ -146,6 +133,19 @@ export default function BusinessDashboard() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (session && status === 'authenticated') {
+      if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
+        router.push('/auth/signin')
+        return
+      }
+      fetchMovements()
+      fetchStats()
+    } else if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    }
+  }, [session, status, fetchMovements, router])
 
   const filteredMovements = movements.filter(movement => {
     const matchesType = filterType === 'all' || movement.type.toLowerCase() === filterType

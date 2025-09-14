@@ -48,6 +48,7 @@ export default function StudentManagement() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
 
@@ -173,15 +174,26 @@ export default function StudentManagement() {
               <h2 className="text-3xl font-bold text-gray-900">Students</h2>
               <p className="text-gray-600 mt-2">Manage student profiles, enrollment, and academic records</p>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>Add Student</span>
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Add Student</span>
+              </button>
+              <button
+                onClick={() => setShowBulkModal(true)}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                <span>Add Bulk</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -277,7 +289,10 @@ export default function StudentManagement() {
                     <tr key={student.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
+                          <div 
+                            className="flex-shrink-0 h-10 w-10 cursor-pointer hover:bg-primary-200 rounded-full transition-colors"
+                            onClick={() => handleViewStudent(student)}
+                          >
                             <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                               <span className="text-primary-600 font-medium">
                                 {student.firstName[0]}{student.lastName[0]}
@@ -285,11 +300,17 @@ export default function StudentManagement() {
                             </div>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div 
+                              className="text-sm font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
+                              onClick={() => handleViewStudent(student)}
+                            >
                               {student.firstName} {student.lastName}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {student.studentCode} • {student.email}
+                            <div 
+                              className="text-sm text-gray-500 cursor-pointer hover:text-primary-600 transition-colors"
+                              onClick={() => handleViewStudent(student)}
+                            >
+                              {student.email}
                             </div>
                           </div>
                         </div>
@@ -412,6 +433,9 @@ export default function StudentManagement() {
 
         {/* Add Student Modal */}
         {showAddModal && <AddStudentModal onClose={() => setShowAddModal(false)} onSuccess={fetchStudents} />}
+
+        {/* Bulk Upload Modal */}
+        {showBulkModal && <BulkUploadModal onClose={() => setShowBulkModal(false)} onSuccess={fetchStudents} />}
 
         {/* View Student Modal */}
         {showViewModal && selectedStudent && (
@@ -1586,6 +1610,269 @@ function EditStudentModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// Bulk Upload Modal Component
+function BulkUploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [results, setResults] = useState<{
+    success: number
+    errors: number
+    details: Array<{ row: number; error: string; data?: any }>
+  } | null>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && file.type === 'text/csv') {
+      setCsvFile(file)
+      setResults(null)
+    } else {
+      alert('Please select a valid CSV file')
+      e.target.value = ''
+    }
+  }
+
+  const downloadTemplate = async () => {
+    try {
+      const response = await fetch('/api/admin/students/template')
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'student_bulk_upload_template.csv'
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert('Failed to download template')
+      }
+    } catch (error) {
+      console.error('Error downloading template:', error)
+      alert('Failed to download template')
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!csvFile) {
+      alert('Please select a CSV file first')
+      return
+    }
+
+    setLoading(true)
+    setProgress(0)
+    setResults(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', csvFile)
+
+      const response = await fetch('/api/admin/students/bulk-create', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setResults(data.results)
+        if (data.results.success > 0) {
+          onSuccess()
+        }
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to upload students')
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      alert('Failed to upload students')
+    } finally {
+      setLoading(false)
+      setProgress(100)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">Bulk Student Upload</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-gray-600 mt-1">Upload a CSV file to create multiple students at once</p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Template Download */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900">CSV Template</h3>
+                <p className="text-blue-700 text-sm mt-1">
+                  Download the template file with the required columns and format
+                </p>
+              </div>
+              <button
+                onClick={downloadTemplate}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Download Template</span>
+              </button>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload CSV File</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select CSV File
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Only CSV files are accepted. Make sure your data follows the template format.
+                </p>
+              </div>
+
+              {csvFile && (
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{csvFile.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(csvFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleUpload}
+                      disabled={loading}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                          </svg>
+                          <span>Upload Students</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Progress and Results */}
+          {loading && (
+            <div className="bg-yellow-50 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600"></div>
+                <div>
+                  <p className="text-sm font-medium text-yellow-900">Processing CSV file...</p>
+                  <p className="text-xs text-yellow-700">This may take a few moments for large files</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {results && (
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Results</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">{results.success}</div>
+                  <div className="text-sm text-green-700">Students Created</div>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-red-600">{results.errors}</div>
+                  <div className="text-sm text-red-700">Errors</div>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600">{results.success + results.errors}</div>
+                  <div className="text-sm text-blue-700">Total Processed</div>
+                </div>
+              </div>
+
+              {results.details.length > 0 && (
+                <div>
+                  <h4 className="text-md font-semibold text-gray-900 mb-3">Details</h4>
+                  <div className="max-h-60 overflow-y-auto">
+                    {results.details.map((detail, index) => (
+                      <div key={index} className="mb-2 p-3 rounded-lg border border-gray-200">
+                        <div className="flex items-start space-x-3">
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                            detail.error ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                          }`}>
+                            {detail.row}
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${
+                              detail.error ? 'text-red-900' : 'text-green-900'
+                            }`}>
+                              {detail.error ? 'Error' : 'Success'}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {detail.error || 'Student created successfully'}
+                            </p>
+                            {detail.data && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {detail.data.firstName} {detail.data.lastName} - {detail.data.email}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

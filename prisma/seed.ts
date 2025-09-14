@@ -395,70 +395,6 @@ async function main() {
   const geoSubject = createdSubjects.find(s => s.name === 'Geography')!
   const engSubject = createdSubjects.find(s => s.name === 'English')!
 
-  // Create or update teaching plans
-  const teachingPlan1 = await prisma.teachingPlan.upsert({
-    where: { studentId: student1.id },
-    update: {},
-    create: {
-      studentId: student1.id,
-      goals: 'Improve problem-solving skills and reading comprehension',
-      methodology: 'Interactive learning with practical exercises',
-      schedule: 'Monday, Wednesday, Friday - 2:00 PM to 4:00 PM',
-      notes: 'Student shows great potential in mathematics',
-    },
-  })
-
-  // Create teaching plan subjects for student1
-  const student1Subjects = [mathSubject, portSubject, sciSubject]
-  await Promise.all(
-    student1Subjects.map(subject =>
-      prisma.teachingPlanSubject.upsert({
-        where: {
-          teachingPlanId_subjectId: {
-            teachingPlanId: teachingPlan1.id,
-            subjectId: subject.id,
-          },
-        },
-        update: {},
-        create: {
-          teachingPlanId: teachingPlan1.id,
-          subjectId: subject.id,
-        },
-      })
-    )
-  )
-
-  const teachingPlan2 = await prisma.teachingPlan.upsert({
-    where: { studentId: student2.id },
-    update: {},
-    create: {
-      studentId: student2.id,
-      goals: 'Enhance critical thinking and language skills',
-      methodology: 'Discussion-based learning with multimedia resources',
-      schedule: 'Tuesday, Thursday - 3:00 PM to 5:00 PM',
-      notes: 'Student excels in creative writing',
-    },
-  })
-
-  // Create teaching plan subjects for student2
-  const student2Subjects = [histSubject, geoSubject, engSubject]
-  await Promise.all(
-    student2Subjects.map(subject =>
-      prisma.teachingPlanSubject.upsert({
-        where: {
-          teachingPlanId_subjectId: {
-            teachingPlanId: teachingPlan2.id,
-            subjectId: subject.id,
-          },
-        },
-        update: {},
-        create: {
-          teachingPlanId: teachingPlan2.id,
-          subjectId: subject.id,
-        },
-      })
-    )
-  )
   console.log('✅ Teaching plans exist')
 
   // Create or update some payments
@@ -680,7 +616,7 @@ async function main() {
   // Create sample expenses
   const sampleExpenses = [
     {
-      type: 'SERVICE' as const,
+      type: 'SERVICE',
       description: 'Internet Service Provider',
       amount: 89.99,
       date: new Date('2024-09-01'),
@@ -689,7 +625,7 @@ async function main() {
       notes: 'Monthly internet bill for the center'
     },
     {
-      type: 'MATERIALS' as const,
+      type: 'MATERIALS',
       description: 'Office Supplies',
       amount: 156.50,
       date: new Date('2024-09-05'),
@@ -698,7 +634,7 @@ async function main() {
       notes: 'Pens, paper, notebooks, and other office supplies'
     },
     {
-      type: 'SERVICE' as const,
+      type: 'SERVICE',
       description: 'Cleaning Service',
       amount: 120.00,
       date: new Date('2024-09-10'),
@@ -707,7 +643,7 @@ async function main() {
       notes: 'Monthly cleaning service for the facility'
     },
     {
-      type: 'MATERIALS' as const,
+      type: 'MATERIALS',
       description: 'Educational Materials',
       amount: 234.75,
       date: new Date('2024-09-15'),
@@ -716,7 +652,7 @@ async function main() {
       notes: 'Textbooks and educational resources'
     },
     {
-      type: 'DAILY_EMPLOYEES' as const,
+      type: 'DAILY_EMPLOYEES',
       description: 'Substitute Teacher Payment',
       amount: 85.00,
       date: new Date('2024-09-18'),
@@ -725,7 +661,7 @@ async function main() {
       notes: 'Payment for substitute teacher coverage'
     },
     {
-      type: 'SERVICE' as const,
+      type: 'SERVICE',
       description: 'Electricity Bill',
       amount: 145.30,
       date: new Date('2024-09-20'),
@@ -734,7 +670,7 @@ async function main() {
       notes: 'Monthly electricity bill'
     },
     {
-      type: 'MATERIALS' as const,
+      type: 'MATERIALS',
       description: 'Computer Equipment',
       amount: 899.99,
       date: new Date('2024-09-25'),
@@ -743,7 +679,7 @@ async function main() {
       notes: 'New laptops for student use'
     },
     {
-      type: 'SERVICE' as const,
+      type: 'SERVICE',
       description: 'Software Licenses',
       amount: 299.00,
       date: new Date('2024-09-28'),
@@ -752,7 +688,7 @@ async function main() {
       notes: 'Annual software license renewal'
     },
     {
-      type: 'DAILY_EMPLOYEES' as const,
+      type: 'DAILY_EMPLOYEES',
       description: 'Event Staff',
       amount: 150.00,
       date: new Date('2024-10-01'),
@@ -761,7 +697,7 @@ async function main() {
       notes: 'Staff for parent-teacher meeting'
     },
     {
-      type: 'MATERIALS' as const,
+      type: 'MATERIALS',
       description: 'Art Supplies',
       amount: 78.50,
       date: new Date('2024-10-05'),

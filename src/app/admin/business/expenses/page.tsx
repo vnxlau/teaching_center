@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNotification } from '@/components/NotificationProvider'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
@@ -11,7 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Expense {
   id: string
-  type: 'SERVICE' | 'MATERIALS' | 'DAILY_EMPLOYEES'
+  type: string
   description: string
   amount: number
   date: string
@@ -66,7 +66,7 @@ export default function ExpensesDashboard() {
   const itemsPerPage = 10
 
   const [newExpense, setNewExpense] = useState({
-    type: 'SERVICE' as const,
+    type: 'SERVICE',
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
@@ -77,7 +77,7 @@ export default function ExpensesDashboard() {
 
   const [editExpense, setEditExpense] = useState({
     id: '',
-    type: 'SERVICE' as const,
+    type: 'SERVICE',
     description: '',
     amount: '',
     date: '',
@@ -86,20 +86,7 @@ export default function ExpensesDashboard() {
     notes: ''
   })
 
-  useEffect(() => {
-    if (session && status === 'authenticated') {
-      if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
-        router.push('/auth/signin')
-        return
-      }
-      fetchExpenses()
-      fetchStats()
-    } else if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    }
-  }, [session, status])
-
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/expenses')
       if (response.ok) {
@@ -112,9 +99,9 @@ export default function ExpensesDashboard() {
       console.error('Failed to fetch expenses:', error)
       showNotification(t.failedToLoadExpenses, 'error')
     }
-  }
+  }, [showNotification, t.failedToLoadExpenses])
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/expenses/stats')
       if (response.ok) {
@@ -129,7 +116,7 @@ export default function ExpensesDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showNotification, t.failedToLoadExpenseStats])
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -239,6 +226,23 @@ export default function ExpensesDashboard() {
     setSelectedExpense(expense)
     setShowViewModal(true)
   }
+
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'STAFF') {
+      router.push('/auth/signin')
+      return
+    }
+
+    fetchExpenses()
+    fetchStats()
+  }, [session, status, router, fetchExpenses, fetchStats])
 
   // Filter expenses based on search and type
   const filteredExpenses = expenses.filter(expense => {

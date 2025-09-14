@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { NoteStatus } from '@prisma/client'
 
 // GET /api/notes - Get all notes for a student
 export async function GET(request: NextRequest) {
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const notes = await prisma.studentNote.findMany({
+    const notes = await (prisma as any).studentNote.findMany({
       where: {
         studentId: studentId
       },
@@ -79,12 +78,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Content and at least one student are required' }, { status: 400 })
     }
 
+    // Debug: Log session user info
+    console.log('Session user:', {
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role,
+      name: session.user.name
+    })
+
+    // Find user by email instead of ID to be more robust
+    const userExists = await (prisma as any).user.findUnique({
+      where: { email: session.user.email }
+    })
+
+    if (!userExists) {
+      console.error('User not found in database by email:', session.user.email)
+      return NextResponse.json({ error: 'User not found' }, { status: 400 })
+    }
+
+    console.log('Found user in database:', { id: userExists.id, email: userExists.email })
+
     // Create the note
-    const note = await prisma.note.create({
+    const note = await (prisma as any).note.create({
       data: {
         content,
-        status: status || NoteStatus.INFO,
-        createdBy: session.user.id
+        status: status || 'INFO',
+        createdBy: userExists.id // Use the actual user ID from database
       }
     })
 
@@ -94,12 +113,12 @@ export async function POST(request: NextRequest) {
       noteId: note.id
     }))
 
-    await prisma.studentNote.createMany({
+    await (prisma as any).studentNote.createMany({
       data: studentNotes
     })
 
     // Return the created note with student information
-    const createdNote = await prisma.note.findUnique({
+    const createdNote = await (prisma as any).note.findUnique({
       where: { id: note.id },
       include: {
         students: {

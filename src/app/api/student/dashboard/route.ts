@@ -25,19 +25,6 @@ export async function GET() {
     const student = await prisma.student.findUnique({
       where: { id: session.user.studentId },
       include: {
-        teachingPlan: {
-          include: {
-            subjects: {
-              include: {
-                subject: {
-                  select: {
-                    name: true
-                  }
-                }
-              }
-            }
-          }
-        },
         tests: {
           take: 5,
           orderBy: { createdAt: 'desc' },
@@ -106,11 +93,6 @@ export async function GET() {
       firstName: student.firstName,
       lastName: student.lastName,
       grade: student.grade,
-      teachingPlan: student.teachingPlan ? {
-        subjects: student.teachingPlan.subjects.map(tps => tps.subject.name),
-        goals: student.teachingPlan.goals,
-        schedule: student.teachingPlan.schedule
-      } : null,
       recentGrades: student.tests.map((testResult: any) => ({
         test: {
           title: testResult.test.title,

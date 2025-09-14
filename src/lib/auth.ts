@@ -83,6 +83,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
+        token.sub = user.id // Explicitly set the subject to user ID
         token.role = user.role
         token.studentId = user.studentId
         token.parentId = user.parentId
@@ -95,7 +96,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }: { session: any; token: any }) {
       if (token) {
-        session.user.id = token.sub!
+        session.user.id = token.sub // Use the explicitly set sub field
         session.user.role = token.role
         session.user.studentId = token.studentId
         session.user.parentId = token.parentId
