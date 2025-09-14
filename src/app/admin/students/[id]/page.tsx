@@ -51,6 +51,33 @@ interface Student {
     averageScore?: number
     testsCompleted: number
   }
+  testCategories: {
+    closed: Array<{
+      id: string
+      title: string
+      subject: string
+      scheduledDate: string
+      maxScore: number
+      score: number
+      notes?: string
+      submittedAt: string
+    }>
+    done: Array<{
+      id: string
+      title: string
+      subject: string
+      scheduledDate: string
+      maxScore: number
+      submittedAt: string
+    }>
+    upcoming: Array<{
+      id: string
+      title: string
+      subject: string
+      scheduledDate: string
+      maxScore: number
+    }>
+  }
 }
 
 interface AttendanceRecord {
@@ -137,6 +164,7 @@ export default function StudentInfoPage() {
   // Test scores state
   const [testScores, setTestScores] = useState<any[]>([])
   const [timeRange, setTimeRange] = useState<'1' | '3' | '6'>('3')
+  const [activeTestTab, setActiveTestTab] = useState<'closed' | 'done' | 'upcoming'>('closed')
 
   const fetchStudentData = useCallback(async () => {
     try {
@@ -146,14 +174,14 @@ export default function StudentInfoPage() {
         setStudent(data.student)
         
         // Extract test scores for the graph
-        if (data.student.tests) {
-          const processedTests = data.student.tests
-            .filter((testResult: any) => testResult.score !== null)
-            .map((testResult: any) => ({
-              id: testResult.test.id,
-              score: testResult.score,
-              date: testResult.test.scheduledDate,
-              subject: testResult.test.subject.name
+        if (data.student.testCategories) {
+          const processedTests = data.student.testCategories.closed
+            .filter((test: any) => test.score !== null)
+            .map((test: any) => ({
+              id: test.id,
+              score: test.score,
+              date: test.submittedAt,
+              subject: test.subject
             }))
             .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
           
@@ -719,6 +747,152 @@ export default function StudentInfoPage() {
                       }
                     }}
                   />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Test Categories Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Management</CardTitle>
+              <p className="text-sm text-gray-600">Detailed view of student&apos;s test status and history</p>
+            </CardHeader>
+            <div className="border-b border-gray-200">
+              <nav className="flex">
+                <button
+                  onClick={() => setActiveTestTab('closed')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                    activeTestTab === 'closed'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Closed ({student.testCategories.closed.length})
+                </button>
+                <button
+                  onClick={() => setActiveTestTab('done')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                    activeTestTab === 'done'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Done ({student.testCategories.done.length})
+                </button>
+                <button
+                  onClick={() => setActiveTestTab('upcoming')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                    activeTestTab === 'upcoming'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Upcoming ({student.testCategories.upcoming.length})
+                </button>
+              </nav>
+            </div>
+            <CardContent>
+              {activeTestTab === 'closed' && (
+                <div>
+                  {student.testCategories.closed.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">📊</div>
+                      <p className="text-gray-600">No graded tests yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {student.testCategories.closed.map((test) => {
+                        const percentage = Math.round((test.score / test.maxScore) * 100)
+                        return (
+                          <div key={test.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{test.title}</h4>
+                              <p className="text-sm text-gray-600">{test.subject}</p>
+                              <p className="text-sm text-gray-500">
+                                Submitted: {new Date(test.submittedAt).toLocaleDateString()}
+                              </p>
+                              {test.notes && (
+                                <p className="text-sm text-gray-500 mt-1">{test.notes}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-gray-900">
+                                {test.score}/{test.maxScore}
+                              </p>
+                              <p className={`text-sm font-medium ${
+                                percentage >= 80 ? 'text-green-600' : 
+                                percentage >= 70 ? 'text-yellow-600' : 'text-red-600'
+                              }`}>
+                                {percentage}%
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTestTab === 'done' && (
+                <div>
+                  {student.testCategories.done.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">✅</div>
+                      <p className="text-gray-600">No completed tests awaiting grading</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {student.testCategories.done.map((test) => (
+                        <div key={test.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                          <div>
+                            <h4 className="font-medium text-gray-900">{test.title}</h4>
+                            <p className="text-sm text-gray-600">{test.subject}</p>
+                            <p className="text-sm text-gray-500">
+                              Submitted: {new Date(test.submittedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                              Awaiting Grade
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTestTab === 'upcoming' && (
+                <div>
+                  {student.testCategories.upcoming.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">📅</div>
+                      <p className="text-gray-600">No upcoming tests scheduled</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {student.testCategories.upcoming.map((test) => (
+                        <div key={test.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                          <div>
+                            <h4 className="font-medium text-gray-900">{test.title}</h4>
+                            <p className="text-sm text-gray-600">{test.subject}</p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(test.scheduledDate).toLocaleDateString()} {' '}
+                              {new Date(test.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              Scheduled
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

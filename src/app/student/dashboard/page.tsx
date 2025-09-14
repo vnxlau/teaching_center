@@ -6,6 +6,7 @@ import Link from 'next/link'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
 import { useLanguage } from '@/contexts/LanguageContext'
+import StudentPerformanceChart from '@/components/StudentPerformanceChart'
 
 interface StudentData {
   id: string
@@ -18,15 +19,44 @@ interface StudentData {
       title: string
       subject: string
       maxScore: number
+      scheduledDate: string
     }
     score: number
     notes: string
+    submittedAt: string
   }>
   upcomingTests: Array<{
     title: string
     subject: string
     scheduledDate: string
   }>
+  testCategories: {
+    closed: Array<{
+      id: string
+      title: string
+      subject: string
+      scheduledDate: string
+      maxScore: number
+      score: number
+      notes?: string
+      submittedAt: string
+    }>
+    done: Array<{
+      id: string
+      title: string
+      subject: string
+      scheduledDate: string
+      maxScore: number
+      submittedAt: string
+    }>
+    upcoming: Array<{
+      id: string
+      title: string
+      subject: string
+      scheduledDate: string
+      maxScore: number
+    }>
+  }
   paymentStatus: {
     pending: number
     overdue: number
@@ -38,6 +68,7 @@ export default function StudentDashboard() {
   const [studentData, setStudentData] = useState<StudentData | null>(null)
   const [loading, setLoading] = useState(true)
   const { t } = useLanguage()
+  const [activeTestTab, setActiveTestTab] = useState<'closed' | 'done' | 'upcoming'>('closed')
 
   useEffect(() => {
     fetchStudentData()
@@ -176,6 +207,170 @@ export default function StudentDashboard() {
                     <p className="text-sm font-medium text-gray-600">{t.pendingPayments}</p>
                     <p className="text-2xl font-bold text-gray-900">{studentData.paymentStatus.pending}</p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Chart */}
+            <div className="mb-8">
+              <StudentPerformanceChart
+                testScores={studentData.recentGrades.map(grade => ({
+                  testTitle: grade.test.title,
+                  subject: grade.test.subject,
+                  score: grade.score,
+                  maxScore: grade.test.maxScore,
+                  date: grade.submittedAt
+                }))}
+              />
+            </div>
+
+            {/* Test Categories Section */}
+            <div className="mb-8">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">My Tests</h3>
+                </div>
+
+                {/* Tabs */}
+                <div className="border-b border-gray-200">
+                  <nav className="flex">
+                    <button
+                      onClick={() => setActiveTestTab('closed')}
+                      className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                        activeTestTab === 'closed'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      Closed ({studentData.testCategories.closed.length})
+                    </button>
+                    <button
+                      onClick={() => setActiveTestTab('done')}
+                      className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                        activeTestTab === 'done'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      Done ({studentData.testCategories.done.length})
+                    </button>
+                    <button
+                      onClick={() => setActiveTestTab('upcoming')}
+                      className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                        activeTestTab === 'upcoming'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      Upcoming ({studentData.testCategories.upcoming.length})
+                    </button>
+                  </nav>
+                </div>
+
+                {/* Tab Content */}
+                <div className="p-6">
+                  {activeTestTab === 'closed' && (
+                    <div>
+                      {studentData.testCategories.closed.length === 0 ? (
+                        <div className="text-center py-8">
+                          <div className="text-gray-400 text-4xl mb-2">📊</div>
+                          <p className="text-gray-600">No closed tests yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {studentData.testCategories.closed.map((test) => {
+                            const percentage = Math.round((test.score / test.maxScore) * 100)
+                            return (
+                              <div key={test.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{test.title}</h4>
+                                  <p className="text-sm text-gray-600">{test.subject}</p>
+                                  <p className="text-sm text-gray-500">
+                                    Submitted: {new Date(test.submittedAt).toLocaleDateString()}
+                                  </p>
+                                  {test.notes && (
+                                    <p className="text-sm text-gray-500 mt-1">{test.notes}</p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-gray-900">
+                                    {test.score}/{test.maxScore}
+                                  </p>
+                                  <p className={`text-sm font-medium ${
+                                    percentage >= 80 ? 'text-green-600' : 
+                                    percentage >= 70 ? 'text-yellow-600' : 'text-red-600'
+                                  }`}>
+                                    {percentage}%
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTestTab === 'done' && (
+                    <div>
+                      {studentData.testCategories.done.length === 0 ? (
+                        <div className="text-center py-8">
+                          <div className="text-gray-400 text-4xl mb-2">✅</div>
+                          <p className="text-gray-600">No completed tests waiting for grading</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {studentData.testCategories.done.map((test) => (
+                            <div key={test.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{test.title}</h4>
+                                <p className="text-sm text-gray-600">{test.subject}</p>
+                                <p className="text-sm text-gray-500">
+                                  Submitted: {new Date(test.submittedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                  Awaiting Grade
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTestTab === 'upcoming' && (
+                    <div>
+                      {studentData.testCategories.upcoming.length === 0 ? (
+                        <div className="text-center py-8">
+                          <div className="text-gray-400 text-4xl mb-2">📅</div>
+                          <p className="text-gray-600">No upcoming tests scheduled</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {studentData.testCategories.upcoming.map((test) => (
+                            <div key={test.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{test.title}</h4>
+                                <p className="text-sm text-gray-600">{test.subject}</p>
+                                <p className="text-sm text-gray-500">
+                                  {new Date(test.scheduledDate).toLocaleDateString()} {t.at}{' '}
+                                  {new Date(test.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                  Scheduled
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

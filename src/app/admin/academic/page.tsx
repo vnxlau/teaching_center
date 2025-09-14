@@ -97,8 +97,10 @@ export default function AcademicManagement() {
     subjectId: '',
     scheduledDate: '',
     maxScore: '100',
-    schoolYearId: ''
+    schoolYearId: '',
+    selectedStudents: [] as string[]
   })
+  const [studentSearchTerm, setStudentSearchTerm] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -115,6 +117,7 @@ export default function AcademicManagement() {
 
     fetchAcademicData()
     fetchSubjects()
+    fetchStudentsAndYears() // Load students and school years on component mount
   }, [session, status, router])
 
   const fetchAcademicData = async () => {
@@ -146,20 +149,29 @@ export default function AcademicManagement() {
 
   const fetchStudentsAndYears = async () => {
     try {
+      console.log('Fetching students and school years...')
       const [studentsRes, yearsRes] = await Promise.all([
         fetch('/api/admin/students'),
         fetch('/api/admin/school-years')
       ])
       
+      console.log('Students response:', studentsRes.status, studentsRes.ok)
+      console.log('School years response:', yearsRes.status, yearsRes.ok)
+      
       if (studentsRes.ok) {
         const studentsData = await studentsRes.json()
+        console.log('Students data:', studentsData)
         setStudents(studentsData.students || [])
+      } else {
+        console.error('Failed to fetch students:', await studentsRes.text())
       }
       
       if (yearsRes.ok) {
         const yearsData = await yearsRes.json()
+        console.log('School years data:', yearsData)
         setSchoolYears(yearsData.schoolYears || [])
       } else {
+        console.error('Failed to fetch school years:', await yearsRes.text())
         // Fallback if school years API doesn't exist
         setSchoolYears([{ id: 'default', name: 'Current Year' }])
       }
@@ -175,30 +187,77 @@ export default function AcademicManagement() {
       return
     }
 
+    // Ensure we have required data
+    const schoolYearId = newTest.schoolYearId || schoolYears[0]?.id
+    const staffId = session?.user?.staffId || session?.user?.id
+
+    if (!schoolYearId) {
+      alert('No school year available. Please contact administrator.')
+      return
+    }
+
+    if (!staffId) {
+      alert('User session invalid. Please sign in again.')
+      return
+    }
+
+    const testData = {
+      type: 'test',
+      title: newTest.title,
+      subjectId: newTest.subjectId,
+      scheduledDate: newTest.scheduledDate,
+      maxScore: parseInt(newTest.maxScore),
+      schoolYearId,
+      staffId
+    }
+
+    console.log('Sending test data:', testData)
+    console.log('Session user:', session?.user)
+    console.log('School years:', schoolYears)
+
     try {
       const response = await fetch('/api/admin/academic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          type: 'test',
-          title: newTest.title,
-          subjectId: newTest.subjectId,
-          scheduledDate: newTest.scheduledDate,
-          maxScore: parseInt(newTest.maxScore),
-          schoolYearId: newTest.schoolYearId || schoolYears[0]?.id,
-          staffId: session?.user?.staffId || session?.user?.id // Use staffId if available, fallback to user.id
-        })
+        body: JSON.stringify(testData)
       })
 
       if (response.ok) {
+        const createdTest = await response.json()
+        
+        // Assign selected students to the test
+        if (newTest.selectedStudents.length > 0) {
+          try {
+            const assignResponse = await fetch('/api/admin/test-students', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                testId: createdTest.id,
+                studentIds: newTest.selectedStudents
+              })
+            })
+            
+            if (!assignResponse.ok) {
+              console.error('Failed to assign students to test')
+              alert('Test created but failed to assign some students. Please assign them manually.')
+            }
+          } catch (assignError) {
+            console.error('Error assigning students:', assignError)
+            alert('Test created but failed to assign students. Please assign them manually.')
+          }
+        }
+        
         setNewTest({
           title: '',
           subjectId: '',
           scheduledDate: '',
           maxScore: '100',
-          schoolYearId: ''
+          schoolYearId: '',
+          selectedStudents: []
         })
         setShowTestModal(false)
         fetchAcademicData()
@@ -211,11 +270,6 @@ export default function AcademicManagement() {
       console.error('Failed to create test:', error)
       alert('Failed to schedule test')
     }
-  }
-
-  const openTestModal = () => {
-    fetchStudentsAndYears()
-    setShowTestModal(true)
   }
 
   const createSubject = async () => {
@@ -470,6 +524,36 @@ export default function AcademicManagement() {
            subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
+  const openTestModal = () => {
+    // Set default date/time to current date at 10:00
+    const now = new Date()
+    const defaultDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0)
+    const formattedDateTime = defaultDateTime.toISOString().slice(0, 16) // Format for datetime-local input
+
+    setNewTest({
+      title: '',
+      subjectId: '',
+      scheduledDate: formattedDateTime,
+      maxScore: '100',
+      schoolYearId: schoolYears[0]?.id || '',
+      selectedStudents: []
+    })
+    setStudentSearchTerm('')
+    fetchStudentsAndYears()
+    setShowTestModal(true)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'SCHEDULED': return 'bg-blue-100 text-blue-800'
+      case 'COMPLETED': return 'bg-green-100 text-green-800'
+      case 'CANCELLED': return 'bg-red-100 text-red-800'
+      case 'ACTIVE': return 'bg-green-100 text-green-800'
+      case 'PAUSED': return 'bg-yellow-100 text-yellow-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   const getTestStats = (test: Test) => {
     const results = test.results || []
     const participantCount = results.length
@@ -484,17 +568,6 @@ export default function AcademicManagement() {
     return {
       participantCount,
       averageScore: averageScore ? (averageScore / test.maxScore) * 100 : null
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SCHEDULED': return 'bg-blue-100 text-blue-800'
-      case 'COMPLETED': return 'bg-green-100 text-green-800'
-      case 'CANCELLED': return 'bg-red-100 text-red-800'
-      case 'ACTIVE': return 'bg-green-100 text-green-800'
-      case 'PAUSED': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -1002,17 +1075,86 @@ export default function AcademicManagement() {
           </div>
 
           <div>
-            <label htmlFor="maxScore" className="block text-sm font-medium text-gray-700 mb-2">
-              Maximum Score
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Assign Students
             </label>
-            <input
-              type="number"
-              id="maxScore"
-              value={newTest.maxScore}
-              onChange={(e) => setNewTest({ ...newTest, maxScore: e.target.value })}
-              className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="100"
-            />
+            <div className="space-y-3">
+              {/* Student Search */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={studentSearchTerm}
+                  onChange={(e) => setStudentSearchTerm(e.target.value)}
+                  placeholder="Search students by name or code..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+
+              {/* Student List */}
+              <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
+                {students
+                  .filter(student =>
+                    student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                    student.studentCode.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                  )
+                  .map((student) => (
+                    <div
+                      key={student.id}
+                      className={`flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                        newTest.selectedStudents.includes(student.id) ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => {
+                        const isSelected = newTest.selectedStudents.includes(student.id)
+                        if (isSelected) {
+                          setNewTest({
+                            ...newTest,
+                            selectedStudents: newTest.selectedStudents.filter(id => id !== student.id)
+                          })
+                        } else {
+                          setNewTest({
+                            ...newTest,
+                            selectedStudents: [...newTest.selectedStudents, student.id]
+                          })
+                        }
+                      }}
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {student.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Code: {student.studentCode}
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        {newTest.selectedStudents.includes(student.id) && (
+                          <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {students.filter(student =>
+                  student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                  student.studentCode.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="p-4 text-center text-gray-500">
+                    No students found
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Count */}
+              <div className="text-sm text-gray-600">
+                {newTest.selectedStudents.length} student{newTest.selectedStudents.length !== 1 ? 's' : ''} selected
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-4 pt-4">
