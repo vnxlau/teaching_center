@@ -165,7 +165,7 @@ export default function StudentInfoPage() {
   const [testScores, setTestScores] = useState<any[]>([])
   const [timeRange, setTimeRange] = useState<'1' | '3' | '6'>('3')
   const [activeTestTab, setActiveTestTab] = useState<'closed' | 'done' | 'upcoming'>('closed')
-
+  
   const fetchStudentData = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/students/${studentId}`)
@@ -179,8 +179,10 @@ export default function StudentInfoPage() {
             .filter((test: any) => test.score !== null)
             .map((test: any) => ({
               id: test.id,
-              score: test.score,
-              date: test.submittedAt,
+              score: (test.score / test.maxScore) * 100, // Convert to percentage
+              rawScore: test.score, // Keep raw score for tooltip
+              maxScore: test.maxScore, // Keep max score for tooltip
+              date: test.scheduledDate,
               subject: test.subject
             }))
             .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -724,7 +726,7 @@ export default function StudentInfoPage() {
                             label: function(context) {
                               const filteredTests = getFilteredTestScores()
                               const test = filteredTests[context.dataIndex]
-                              return `${test.subject}: ${context.parsed.y}/20`
+                              return `${test.subject}: ${test.rawScore}/${test.maxScore} (${context.parsed.y.toFixed(1)}%)`
                             }
                           }
                         }
@@ -732,10 +734,10 @@ export default function StudentInfoPage() {
                       scales: {
                         y: {
                           beginAtZero: true,
-                          max: 20,
+                          max: 100,
                           title: {
                             display: true,
-                            text: 'Score'
+                            text: 'Score (%)'
                           }
                         },
                         x: {
@@ -810,7 +812,7 @@ export default function StudentInfoPage() {
                               <h4 className="font-medium text-gray-900">{test.title}</h4>
                               <p className="text-sm text-gray-600">{test.subject}</p>
                               <p className="text-sm text-gray-500">
-                                Submitted: {new Date(test.submittedAt).toLocaleDateString()}
+                                Submitted: {new Date(test.scheduledDate).toLocaleDateString()}
                               </p>
                               {test.notes && (
                                 <p className="text-sm text-gray-500 mt-1">{test.notes}</p>
