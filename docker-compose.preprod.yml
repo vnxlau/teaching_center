@@ -1,0 +1,30 @@
+# Pre-Production Docker Compose Configuration
+# Runs production image locally with Supabase database connection
+# Perfect for testing production builds with real data
+
+services:
+  # Next.js Application (Production Image)
+  app:
+    image: teachingcenter:latest  # Use locally built production image
+    container_name: teachingcenter-app-preprod
+    env_file:
+      - .env.preprod
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PREPROD=true
+      - APP_ENV=preprod
+    networks:
+      - teachingcenter-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  teachingcenter-network:
+    driver: bridge

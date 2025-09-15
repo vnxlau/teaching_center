@@ -51,5 +51,7 @@ for the parents just add the details, the list of children on the right and thei
 
 add feature on the sidebar menu to hightlight the menu we are currently on
 
-Payment received 
-when declaring a payment received for a student in a given month, if the payment doesn't exist - create it and then set it as paid
+---
+Student dashboard
+Add a profile photo before student name
+allow the user to upload the students profile photo to it's file in his specific page
