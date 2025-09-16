@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Breadcrumb from '@/components/Breadcrumb'
+import Button from '@/components/Button'
 import { useLanguage } from '@/contexts/LanguageContext'
 import StudentPerformanceChart from '@/components/StudentPerformanceChart'
 
@@ -129,6 +130,11 @@ export default function StudentDashboard() {
                   <p className="text-gray-600 mb-4">
                     {t.studentInfo} - Code: {studentData.studentCode}, Grade: {studentData.grade}
                   </p>
+                  <Link href="/student/settings">
+                    <Button variant="outline" size="sm" className="bg-white text-blue-600 border-white hover:bg-gray-50">
+                      Edit Profile
+                    </Button>
+                  </Link>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl mb-2">🎓</div>

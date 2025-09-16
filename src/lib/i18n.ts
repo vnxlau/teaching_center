@@ -291,6 +291,7 @@ export interface Translations {
   suspendedStudentsOnly: string
   loadingStudents: string
   noStudentsFound: string
+  searchByNameIdEmail: string
   adjustSearchCriteria: string
   addFirstStudent: string
   studentInformation: string
@@ -315,6 +316,8 @@ export interface Translations {
   failedToDeleteStudent: string
   studentDetails: string
   failedToCreateStudent: string
+  pleaseSelectMembershipPlan: string
+  bulkCreate: string
 
   // Parents Management
   parentsManagement: string
@@ -359,6 +362,17 @@ export interface Translations {
   studentsEnrolled: string
   totalRevenueValue: string
   avgStudentsPerPlan: string
+  createMembershipPlan: string
+  planName: string
+  monthlyPriceEuro: string
+  editMembershipPlan: string
+  daysPerWeekText: string
+  createPlan: string
+  updatePlan: string
+  planNamePlaceholder: string
+  pricePlaceholder: string
+  importantNote: string
+  planChangeWarning: string
 
   // Academic Management
   academicManagement: string
@@ -789,6 +803,7 @@ const translations: Record<Language, Translations> = {
     suspendedStudentsOnly: 'Suspended',
     loadingStudents: 'Loading students...',
     noStudentsFound: 'No Students Found',
+    searchByNameIdEmail: 'Search by name, ID, or email...',
     adjustSearchCriteria: 'Try adjusting your search or filter criteria.',
     addFirstStudent: 'Get started by adding your first student.',
     studentInformation: 'Student',
@@ -813,6 +828,8 @@ const translations: Record<Language, Translations> = {
     failedToDeleteStudent: 'Failed to delete student',
     studentDetails: 'Student Details',
     failedToCreateStudent: 'Failed to create student',
+    pleaseSelectMembershipPlan: 'Please select a membership plan',
+    bulkCreate: 'Bulk Create',
 
     // Parents Management
     parentsManagement: 'Parent Overview',
@@ -857,6 +874,17 @@ const translations: Record<Language, Translations> = {
     studentsEnrolled: 'students',
     totalRevenueValue: 'total',
     avgStudentsPerPlan: 'Avg Students/Plan',
+    createMembershipPlan: 'Create Membership Plan',
+    planName: 'Plan Name',
+    monthlyPriceEuro: 'Monthly Price (€)',
+    editMembershipPlan: 'Edit Membership Plan',
+    daysPerWeekText: 'Days per Week',
+    createPlan: 'Create Plan',
+    updatePlan: 'Update Plan',
+    planNamePlaceholder: 'e.g., Premium Plan',
+    pricePlaceholder: '0.00',
+    importantNote: 'Important Note',
+    planChangeWarning: 'This plan has {count} enrolled student{plural}. Price changes will affect future payments for these students.',
 
     // Academic Management
     academicManagement: 'Academic Overview',
@@ -1383,6 +1411,7 @@ const translations: Record<Language, Translations> = {
     suspendedStudentsOnly: 'Suspenso',
     loadingStudents: 'A carregar alunos...',
     noStudentsFound: 'Nenhum Aluno Encontrado',
+    searchByNameIdEmail: 'Pesquisar por nome, ID ou email...',
     adjustSearchCriteria: 'Tente ajustar os seus critérios de pesquisa ou filtro.',
     addFirstStudent: 'Comece por adicionar o seu primeiro aluno.',
     studentInformation: 'Aluno',
@@ -1407,6 +1436,8 @@ const translations: Record<Language, Translations> = {
     failedToDeleteStudent: 'Falha ao eliminar aluno',
     studentDetails: 'Detalhes do Aluno',
     failedToCreateStudent: 'Falha ao criar aluno',
+    pleaseSelectMembershipPlan: 'Por favor selecione um plano de adesão',
+    bulkCreate: 'Criação em Massa',
 
     // Parents Management
     parentsManagement: 'Visão Geral dos Pais',
@@ -1451,6 +1482,17 @@ const translations: Record<Language, Translations> = {
     studentsEnrolled: 'alunos',
     totalRevenueValue: 'total',
     avgStudentsPerPlan: 'Média Alunos/Plano',
+    createMembershipPlan: 'Criar Plano de Adesão',
+    planName: 'Nome do Plano',
+    monthlyPriceEuro: 'Preço Mensal (€)',
+    editMembershipPlan: 'Editar Plano de Adesão',
+    daysPerWeekText: 'Dias por Semana',
+    createPlan: 'Criar Plano',
+    updatePlan: 'Atualizar Plano',
+    planNamePlaceholder: 'ex.: Plano Premium',
+    pricePlaceholder: '0.00',
+    importantNote: 'Nota Importante',
+    planChangeWarning: 'Este plano tem {count} aluno{plural} inscrito{plural}. Alterações de preço afetarão pagamentos futuros destes alunos.',
 
     // Academic Management
     academicManagement: 'Visão Geral Académica',

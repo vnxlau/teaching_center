@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Modal from '@/components/Modal'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Student {
   id: string
@@ -41,6 +42,7 @@ interface Student {
 export default function StudentManagement() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { t } = useLanguage()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -119,7 +121,7 @@ export default function StudentManagement() {
         // Show error notification instead of alert
         const notification = document.createElement('div')
         notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        notification.textContent = 'Failed to delete student'
+        notification.textContent = t.failedToDeleteStudent
         document.body.appendChild(notification)
         
         setTimeout(() => {
@@ -171,8 +173,8 @@ export default function StudentManagement() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Students</h2>
-              <p className="text-gray-600 mt-2">Manage student profiles, enrollment, and academic records</p>
+              <h2 className="text-3xl font-bold text-gray-900">{t.studentsManagement}</h2>
+              <p className="text-gray-600 mt-2">{t.manageStudentProfilesDesc}</p>
             </div>
             <div className="flex space-x-3">
               <button
@@ -182,7 +184,7 @@ export default function StudentManagement() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <span>Add Student</span>
+                <span>{t.add} {t.student}</span>
               </button>
               <button
                 onClick={() => setShowBulkModal(true)}
@@ -191,7 +193,7 @@ export default function StudentManagement() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
-                <span>Add Bulk</span>
+                <span>{t.bulkCreate}</span>
               </button>
             </div>
           </div>
@@ -215,14 +217,14 @@ export default function StudentManagement() {
                   id="search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by name, ID, or email..."
+                  placeholder={t.searchByNameIdEmail}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
             </div>
             <div className="md:w-48">
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
+                {t.filterByStatus}
               </label>
               <select
                 id="status"
@@ -230,10 +232,10 @@ export default function StudentManagement() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="all">All Students</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
+                <option value="all">{t.allStudents}</option>
+                <option value="active">{t.activeStudentsOnly}</option>
+                <option value="inactive">{t.inactiveStudentsOnly}</option>
+                <option value="suspended">{t.suspendedStudentsOnly}</option>
               </select>
             </div>
           </div>
@@ -243,16 +245,16 @@ export default function StudentManagement() {
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading students...</p>
+            <p className="text-gray-600">{t.loadingStudents}</p>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 text-6xl mb-4">👨‍🎓</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t.noStudentsFound}</h3>
             <p className="text-gray-600">
               {searchTerm || filterStatus !== 'all' 
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Get started by adding your first student.'}
+                ? t.adjustSearchCriteria
+                : t.addFirstStudent}
             </p>
           </div>
         ) : (
@@ -559,7 +561,7 @@ export default function StudentManagement() {
           <Modal
             isOpen={showDeleteModal}
             onClose={() => setShowDeleteModal(false)}
-            title="Delete Student"
+            title={`${t.delete} ${t.student}`}
           >
             <div className="space-y-4">
               <div className="flex items-center">
@@ -589,7 +591,7 @@ export default function StudentManagement() {
                   onClick={confirmDeleteStudent}
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
                 >
-                  Delete Student
+                  {t.delete} {t.student}
                 </button>
               </div>
             </div>
@@ -601,6 +603,7 @@ export default function StudentManagement() {
 
 // Add Student Modal Component
 function AddStudentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [membershipPlans, setMembershipPlans] = useState<Array<{
     id: string
@@ -691,7 +694,7 @@ function AddStudentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
       // Show error notification instead of alert
       const notification = document.createElement('div')
       notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      notification.textContent = 'Please select a membership plan'
+      notification.textContent = t.pleaseSelectMembershipPlan
       document.body.appendChild(notification)
       
       setTimeout(() => {
@@ -1245,6 +1248,7 @@ function EditStudentModal({
   onClose: () => void; 
   onSuccess: () => void 
 }) {
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [membershipPlans, setMembershipPlans] = useState<Array<{
     id: string
@@ -1380,7 +1384,7 @@ function EditStudentModal({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Edit Student</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t.edit} {t.student}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"

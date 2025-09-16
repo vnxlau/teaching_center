@@ -382,7 +382,7 @@ export default function MembershipPlansPage() {
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
-            Create Plan
+            {t.createPlan}
           </button>
         </div>
       )}
@@ -392,12 +392,12 @@ export default function MembershipPlansPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Create Membership Plan</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t.createMembershipPlan}</h3>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Plan Name
+                    {t.planName}
                   </label>
                   <input
                     type="text"
@@ -406,13 +406,13 @@ export default function MembershipPlansPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="e.g., Premium Plan"
+                    placeholder={t.planNamePlaceholder}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="daysPerWeek" className="block text-sm font-medium text-gray-700">
-                    Days per Week
+                    {t.daysPerWeekText}
                   </label>
                   <select
                     id="daysPerWeek"
@@ -428,7 +428,7 @@ export default function MembershipPlansPage() {
 
                 <div>
                   <label htmlFor="monthlyPrice" className="block text-sm font-medium text-gray-700">
-                    Monthly Price (€)
+                    {t.monthlyPriceEuro}
                   </label>
                   <input
                     type="number"
@@ -439,7 +439,7 @@ export default function MembershipPlansPage() {
                     value={formData.monthlyPrice}
                     onChange={(e) => setFormData({ ...formData, monthlyPrice: parseFloat(e.target.value) || 0 })}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="0.00"
+                    placeholder={t.pricePlaceholder}
                   />
                 </div>
 
@@ -455,7 +455,7 @@ export default function MembershipPlansPage() {
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Create Plan
+                    {t.createPlan}
                   </button>
                 </div>
               </form>
@@ -469,12 +469,12 @@ export default function MembershipPlansPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Membership Plan</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t.editMembershipPlan}</h3>
               
               <form onSubmit={handleUpdatePlan} className="space-y-4">
                 <div>
                   <label htmlFor="editName" className="block text-sm font-medium text-gray-700">
-                    Plan Name
+                    {t.planName}
                   </label>
                   <input
                     type="text"
@@ -483,13 +483,13 @@ export default function MembershipPlansPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="e.g., Premium Plan"
+                    placeholder={t.planNamePlaceholder}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="editDaysPerWeek" className="block text-sm font-medium text-gray-700">
-                    Days per Week
+                    {t.daysPerWeekText}
                   </label>
                   <select
                     id="editDaysPerWeek"
@@ -505,7 +505,7 @@ export default function MembershipPlansPage() {
 
                 <div>
                   <label htmlFor="editMonthlyPrice" className="block text-sm font-medium text-gray-700">
-                    Monthly Price (€)
+                    {t.monthlyPriceEuro}
                   </label>
                   <input
                     type="number"
@@ -516,7 +516,7 @@ export default function MembershipPlansPage() {
                     value={formData.monthlyPrice}
                     onChange={(e) => setFormData({ ...formData, monthlyPrice: parseFloat(e.target.value) || 0 })}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="0.00"
+                    placeholder={t.pricePlaceholder}
                   />
                 </div>
 
@@ -529,12 +529,13 @@ export default function MembershipPlansPage() {
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-yellow-800">
-                        Important Note
+                        {t.importantNote}
                       </h3>
                       <div className="mt-2 text-sm text-yellow-700">
                         <p>
-                          This plan has {editingPlan.studentCount} enrolled student{editingPlan.studentCount !== 1 ? 's' : ''}. 
-                          Price changes will affect future payments for these students.
+                          {t.planChangeWarning
+                            .replace('{count}', editingPlan.studentCount.toString())
+                            .replace('{plural}', editingPlan.studentCount !== 1 ? 's' : '')}
                         </p>
                       </div>
                     </div>
@@ -557,7 +558,7 @@ export default function MembershipPlansPage() {
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Update Plan
+                    {t.updatePlan}
                   </button>
                 </div>
               </form>

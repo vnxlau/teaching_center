@@ -15,11 +15,13 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  TimeScale,
   BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js'
+import 'chartjs-adapter-date-fns'
 
 interface Student {
   id: string
@@ -124,6 +126,7 @@ export default function StudentInfoPage() {
   ChartJS.register(
     CategoryScale,
     LinearScale,
+    TimeScale,
     BarElement,
     Title,
     Tooltip,
@@ -135,12 +138,23 @@ export default function StudentInfoPage() {
   const [schedule, setSchedule] = useState<StudentSchedule[]>([])
   const [loading, setLoading] = useState(true)
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const [attendanceForm, setAttendanceForm] = useState({
     checkInTime: '',
     checkOutTime: '',
     status: 'PRESENT' as 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED',
     notes: ''
+  })
+
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    grade: '',
+    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+    monthlyDueAmount: '',
+    discountRate: ''
   })
 
   // Notes state
@@ -456,6 +470,53 @@ export default function StudentInfoPage() {
       })
   }
 
+  const handleEditStudent = () => {
+    if (!student) return
+
+    setEditForm({
+      firstName: student.firstName,
+      lastName: student.lastName,
+      email: student.email,
+      grade: student.grade || '',
+      status: student.status as 'ACTIVE' | 'INACTIVE',
+      monthlyDueAmount: student.monthlyDueAmount?.toString() || '',
+      discountRate: student.discountRate?.toString() || ''
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!student) return
+
+    try {
+      const response = await fetch(`/api/admin/students/${studentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          email: editForm.email,
+          grade: editForm.grade || null,
+          isActive: editForm.status === 'ACTIVE',
+          monthlyDueAmount: editForm.monthlyDueAmount ? parseFloat(editForm.monthlyDueAmount) : null,
+          discountRate: editForm.discountRate ? parseFloat(editForm.discountRate) : null
+        })
+      })
+
+      if (response.ok) {
+        showNotification('Student updated successfully', 'success')
+        setShowEditModal(false)
+        // Refresh student data
+        fetchStudentData()
+      } else {
+        showNotification('Failed to update student', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to update student:', error)
+      showNotification('Failed to update student', 'error')
+    }
+  }
+
   const getFilteredTestScores = () => {
     const now = new Date()
     const monthsBack = parseInt(timeRange)
@@ -496,9 +557,14 @@ export default function StudentInfoPage() {
               <Button variant="outline">Back to Students</Button>
             </Link>
             {session?.user.role === 'ADMIN' && (
-              <Button onClick={() => setShowAttendanceModal(true)}>
-                Log Attendance
-              </Button>
+              <>
+                <Button onClick={handleEditStudent}>
+                  Edit Student
+                </Button>
+                <Button onClick={() => setShowAttendanceModal(true)}>
+                  Log Attendance
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -676,10 +742,15 @@ export default function StudentInfoPage() {
                 <div className="h-80">
                   <Bar
                     data={{
-                      labels: getFilteredTestScores().map(test => format(new Date(test.date), 'MMM dd')),
                       datasets: [{
                         label: 'Test Scores',
-                        data: getFilteredTestScores().map(test => test.score),
+                        data: getFilteredTestScores().map(test => ({
+                          x: new Date(test.date).getTime(),
+                          y: test.score,
+                          subject: test.subject,
+                          rawScore: test.rawScore,
+                          maxScore: test.maxScore
+                        })),
                         backgroundColor: getFilteredTestScores().map(test => {
                           // Color by subject
                           const colors: { [key: string]: string } = {
@@ -724,26 +795,32 @@ export default function StudentInfoPage() {
                         tooltip: {
                           callbacks: {
                             label: function(context) {
-                              const filteredTests = getFilteredTestScores()
-                              const test = filteredTests[context.dataIndex]
-                              return `${test.subject}: ${test.rawScore}/${test.maxScore} (${context.parsed.y.toFixed(1)}%)`
+                              const dataPoint = context.raw as any
+                              return `${dataPoint.subject}: ${dataPoint.rawScore}/${dataPoint.maxScore} (${context.parsed.y.toFixed(1)}%)`
                             }
                           }
                         }
                       },
                       scales: {
+                        x: {
+                          type: 'time',
+                          time: {
+                            unit: 'day',
+                            displayFormats: {
+                              day: 'MMM dd'
+                            }
+                          },
+                          title: {
+                            display: true,
+                            text: 'Date'
+                          }
+                        },
                         y: {
                           beginAtZero: true,
                           max: 100,
                           title: {
                             display: true,
                             text: 'Score (%)'
-                          }
-                        },
-                        x: {
-                          title: {
-                            display: true,
-                            text: 'Date'
                           }
                         }
                       }
@@ -1340,6 +1417,114 @@ export default function StudentInfoPage() {
               </Button>
               <Button onClick={handleEditNote}>
                 Update Note
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit Student Modal */}
+      {showEditModal && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          title="Edit Student"
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">First Name</label>
+                <input
+                  type="text"
+                  value={editForm.firstName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                <input
+                  type="text"
+                  value={editForm.lastName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Grade</label>
+                <input
+                  type="text"
+                  value={editForm.grade}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, grade: e.target.value }))}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm(prev => ({
+                    ...prev,
+                    status: e.target.value as 'ACTIVE' | 'INACTIVE'
+                  }))}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Monthly Due Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.monthlyDueAmount}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, monthlyDueAmount: e.target.value }))}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Discount Rate (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={editForm.discountRate}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, discountRate: e.target.value }))}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditSubmit}>
+                Update Student
               </Button>
             </div>
           </div>

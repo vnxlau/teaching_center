@@ -102,6 +102,9 @@ export default function AcademicManagement() {
   })
   const [studentSearchTerm, setStudentSearchTerm] = useState('')
 
+  // Calendar state
+  const [currentDate, setCurrentDate] = useState(new Date())
+
   useEffect(() => {
     if (status === 'loading') return
 
@@ -524,10 +527,10 @@ export default function AcademicManagement() {
            subjectName.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
-  const openTestModal = () => {
-    // Set default date/time to current date at 10:00
-    const now = new Date()
-    const defaultDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0)
+  const openTestModal = (selectedDate?: Date) => {
+    // Use selected date or default to current date at 10:00
+    const baseDate = selectedDate || new Date()
+    const defaultDateTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 10, 0, 0)
     const formattedDateTime = defaultDateTime.toISOString().slice(0, 16) // Format for datetime-local input
 
     setNewTest({
@@ -569,6 +572,158 @@ export default function AcademicManagement() {
       participantCount,
       averageScore: averageScore ? (averageScore / test.maxScore) * 100 : null
     }
+  }
+
+  // Calendar functions
+  const getTestsForDate = (date: Date) => {
+    return tests.filter(test => {
+      const testDate = new Date(test.scheduledDate)
+      return testDate.toDateString() === date.toDateString()
+    })
+  }
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate)
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1)
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1)
+      }
+      return newDate
+    })
+  }
+
+  const goToToday = () => {
+    setCurrentDate(new Date())
+  }
+
+  // Calendar Component
+  const TestCalendar = () => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+
+    // Get first day of month and last day of month
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const startDate = new Date(firstDay)
+    startDate.setDate(startDate.getDate() - firstDay.getDay()) // Start from Sunday
+
+    const endDate = new Date(lastDay)
+    endDate.setDate(endDate.getDate() + (6 - lastDay.getDay())) // End on Saturday
+
+    const calendarDays = []
+    const current = new Date(startDate)
+
+    while (current <= endDate) {
+      calendarDays.push(new Date(current))
+      current.setDate(current.getDate() + 1)
+    }
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">
+            Test Calendar - {monthNames[month]} {year}
+          </h3>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => navigateMonth('prev')}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={goToToday}
+              className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => navigateMonth('next')}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {/* Day headers */}
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="p-2 text-center text-sm font-medium text-gray-500 bg-gray-50">
+              {day}
+            </div>
+          ))}
+
+          {/* Calendar days */}
+          {calendarDays.map((date, index) => {
+            const dayTests = getTestsForDate(date)
+            const isCurrentMonth = date.getMonth() === month
+            const isToday = date.toDateString() === new Date().toDateString()
+
+            return (
+              <div
+                key={index}
+                className={`min-h-[120px] p-2 border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+                onClick={() => openTestModal(date)}
+              >
+                <div className={`text-sm font-medium mb-1 ${
+                  isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                } ${isToday ? 'text-blue-600' : ''}`}>
+                  {date.getDate()}
+                </div>
+
+                <div className="space-y-1">
+                  {dayTests.slice(0, 3).map((test) => (
+                    <div
+                      key={test.id}
+                      className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded truncate cursor-pointer hover:bg-blue-200 transition-colors"
+                      title={`${test.title} - ${typeof test.subject === 'string' ? test.subject : test.subject.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation() // Prevent triggering the day cell click
+                        openTestResultsModal(test)
+                      }}
+                    >
+                      {test.title}
+                    </div>
+                  ))}
+                  {dayTests.length > 3 && (
+                    <div className="text-xs text-gray-500 px-1">
+                      +{dayTests.length - 3} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-blue-100 rounded mr-2"></div>
+              <span>Click tests to view results</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 ring-2 ring-blue-500 rounded mr-2"></div>
+              <span>Today - Click any day to schedule a test</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // TestResultRow Component
@@ -720,7 +875,7 @@ export default function AcademicManagement() {
             <div className="flex space-x-3">
               {activeTab === 'tests' && (
                 <button 
-                  onClick={openTestModal}
+                  onClick={() => openTestModal()}
                   className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   {t.scheduleTest || 'Schedule Test'}
@@ -790,6 +945,9 @@ export default function AcademicManagement() {
             </div>
           </div>
         )}
+
+        {/* Test Calendar */}
+        <TestCalendar />
 
         {/* Tabs */}
         <div className="mb-6">

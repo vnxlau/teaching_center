@@ -45,20 +45,58 @@ export default function StudentPerformanceChart({
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
-  // Prepare data for the chart
-  const labels = sortedScores.map(score => {
-    const date = new Date(score.date)
+  // Generate continuous date range from first to last test date
+  const generateDateRange = (scores: TestScore[]) => {
+    if (scores.length === 0) return []
+    
+    const startDate = new Date(scores[0].date)
+    const endDate = new Date(scores[scores.length - 1].date)
+    const dateRange: Date[] = []
+    
+    const currentDate = new Date(startDate)
+    while (currentDate <= endDate) {
+      dateRange.push(new Date(currentDate))
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    return dateRange
+  }
+
+  const dateRange = generateDateRange(sortedScores)
+
+  // Create labels for all dates in the range
+  const labels = dateRange.map(date => {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     })
   })
 
-  const scores = sortedScores.map(score => score.score)
-  const maxScores = sortedScores.map(score => score.maxScore)
-  const percentages = sortedScores.map(score =>
-    Math.round((score.score / score.maxScore) * 100)
-  )
+  // Map scores to dates, using null for missing dates
+  const scores = dateRange.map(date => {
+    const testOnDate = sortedScores.find(score => {
+      const scoreDate = new Date(score.date)
+      return scoreDate.toDateString() === date.toDateString()
+    })
+    return testOnDate ? testOnDate.score : null
+  })
+
+  const maxScores = dateRange.map(date => {
+    const testOnDate = sortedScores.find(score => {
+      const scoreDate = new Date(score.date)
+      return scoreDate.toDateString() === date.toDateString()
+    })
+    return testOnDate ? testOnDate.maxScore : null
+  })
+
+  const percentages = dateRange.map((date, index) => {
+    const score = scores[index]
+    const maxScore = maxScores[index]
+    if (score !== null && maxScore !== null) {
+      return Math.round((score / maxScore) * 100)
+    }
+    return null
+  })
 
   const data = {
     labels,
@@ -73,6 +111,7 @@ export default function StudentPerformanceChart({
         pointBorderColor: 'rgb(59, 130, 246)',
         pointBorderWidth: 2,
         pointRadius: 4,
+        spanGaps: false,
       },
       {
         label: 'Max Score',
@@ -85,6 +124,7 @@ export default function StudentPerformanceChart({
         pointBorderColor: 'rgb(156, 163, 175)',
         pointBorderWidth: 2,
         pointRadius: 3,
+        spanGaps: false,
       }
     ]
   }
@@ -116,13 +156,22 @@ export default function StudentPerformanceChart({
             const score = scores[index]
             const maxScore = maxScores[index]
             const percentage = percentages[index]
-            const testTitle = sortedScores[index].testTitle
-            const subject = sortedScores[index].subject
-
+            
+            // Skip tooltip for null values (dates without tests)
+            if (score === null || maxScore === null) {
+              return ''
+            }
+            
+            const testOnDate = sortedScores.find(score => {
+              const scoreDate = new Date(score.date)
+              const labelDate = dateRange[index]
+              return scoreDate.toDateString() === labelDate.toDateString()
+            })
+            
             if (context.datasetIndex === 0) {
               return [
-                `Test: ${testTitle}`,
-                `Subject: ${subject}`,
+                `Test: ${testOnDate?.testTitle || 'Unknown'}`,
+                `Subject: ${testOnDate?.subject || 'Unknown'}`,
                 `Score: ${score}/${maxScore} (${percentage}%)`
               ]
             } else {
